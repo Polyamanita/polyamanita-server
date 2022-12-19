@@ -46,51 +46,49 @@ func RunServer(port string) {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	r.POST("/session")      // login
-	r.DELETE("/session")    // logout
-	r.POST("/auth")         // email account, get auth code
-	r.POST("/auth/refresh") // refresh auth token
-	r.POST("/users")        // register user
+	r.POST("/session", c.Login)                 // login
+	r.DELETE("/session", c.Logout)              // logout
+	r.POST("/auth", c.AuthEmail)                // email account, get auth code
+	r.POST("/auth/refresh", c.RefreshAuthToken) // refresh auth token
+	r.POST("/users", c.RegisterUser)            // register user
 
 	users := r.Group("/users")
 	users.Use(c.AuthenticateUser()) // check user is logged in
 	{
-		users.GET("")         // search for a user
-		users.GET("/:UserID") // get user
+		users.GET("", c.SearchUser)      // search for a user
+		users.GET("/:UserID", c.GetUser) // get user
 
 		user := users.Group("/:UserID")
 		userAuth := users.Group("/:UserID")
 		userAuth.Use(c.AuthorizeUser()) // check logged in ID == UserID
 		{
-			user.GET("/followers") // get user followers
-			user.GET("/feed")      // get follows feed
-			userAuth.PUT("")       // update user info
-			userAuth.DELETE("")    // delete user
+			userAuth.PUT("", c.UpdateUser)             // update user info
+			userAuth.DELETE("", c.DeleteUser)          // delete user
+			user.GET("/followers", c.GetUserFollowers) // get user followers
+			user.GET("/feed", c.GetUserFeed)           // get follows feed
 
 			captures := user.Group("/captures")
 			capturesAuth := userAuth.Group("/captures")
 			{
-				captures.GET("")        // get list of captures
-				capturesAuth.POST("")   // add captures
-				capturesAuth.DELETE("") // delete list of captures
+				captures.GET("", c.GetCapturesList)       // get list of captures
+				capturesAuth.POST("", c.AddCaptures)      // add captures
+				capturesAuth.DELETE("", c.DeleteCaptures) // delete list of captures
 
 				capture := captures.Group("/:MushroomCaptureID")
 				{
-					capture.GET("")                   // get capture details
-					capture.GET("/image/:InstanceID") // download image
+					capture.GET("", c.GetCapture)                             // get capture details
+					capture.GET("/image/:InstanceID", c.DownloadCaptureImage) // download image
 				}
 			}
 
 			followsAuth := userAuth.Group("/follows")
 			follows := user.Group("/follows")
 			{
-				follows.GET("")                  // get user's follows
-				followsAuth.POST("")             // add a follow
-				followsAuth.DELETE("/:FollowID") // unfollow a user
+				follows.GET("", c.GetUserFollows)                // get user's follows
+				followsAuth.POST("", c.AddFollow)                // add a follow
+				followsAuth.DELETE("/:FollowID", c.DeleteFollow) // unfollow a user
 			}
-
 		}
-
 	}
 
 	r.GET("/", c.TestHello)
