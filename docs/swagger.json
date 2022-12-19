@@ -1,0 +1,11 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API for Polyamanita server functions",
+        "title": "Polyamanita API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "\u003csome url\u003e",
+    "paths": {}
+}
