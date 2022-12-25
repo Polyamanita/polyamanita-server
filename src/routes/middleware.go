@@ -15,7 +15,7 @@ func (c *Controller) AuthenticateUser() gin.HandlerFunc {
 			auth, _ = ctx.Cookie("token")
 		}
 
-		_, valid := lib.ValidateToken(auth, c.jwtKey)
+		_, valid := lib.ValidateToken(auth, c.secrets.jwtKey)
 		if !valid {
 			ctx.Status(http.StatusUnauthorized)
 			return
@@ -31,7 +31,7 @@ func (c *Controller) AuthorizeUser() gin.HandlerFunc {
 			auth, _ = ctx.Cookie("token")
 		}
 
-		token, valid := lib.ValidateToken(auth, c.jwtKey)
+		token, valid := lib.ValidateToken(auth, c.secrets.jwtKey)
 		if !valid {
 			ctx.Status(http.StatusUnauthorized)
 			return

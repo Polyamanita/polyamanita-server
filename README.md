@@ -18,6 +18,7 @@ Create a `.env` file with the following contents
 AWS_PROFILE=polyamanita
 JWT_KEY=some-key
 ENVIRONMENT=dev
+SENDGRID_KEY=<sendgrid api key>
 ```
 
 ### Swagger

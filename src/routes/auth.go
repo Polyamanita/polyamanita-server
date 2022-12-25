@@ -1,10 +1,13 @@
 package routes
 
 import (
+	"fmt"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,52 +15,50 @@ func (c *Controller) Login(ctx *gin.Context) { ctx.Status(http.StatusNotImplemen
 
 func (c *Controller) Logout(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
 
+// AuthEmail godoc
+//	@Summary		Send a Verification Code
+//	@Description	Sends an email to the address passed in with a verification code to verify their email
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		routes.AuthEmail.AuthEmailInputStruct	true	"Email address to send code to"
+//	@success		200		{object}	routes.AuthEmail.AuthEmailOutputStruct	"Expiry time of code"
+//	@Failure		500
+//	@Router			/auths [post]
 func (c *Controller) AuthEmail(ctx *gin.Context) {
-	const (
-		Sender    = "no-reply@polyamanita.com"
-		Recipient = "accrazed@gmail.com"
-		Subject   = "Amazon SES Test (AWS SDK for Go)"
-		HtmlBody  = "<h1>Amazon SES Test Email (AWS SDK for Go)</h1><p>This email was sent with " +
-			"<a href='https://aws.amazon.com/ses/'>Amazon SES</a> using the " +
-			"<a href='https://aws.amazon.com/sdk-for-go/'>AWS SDK for Go</a>.</p>"
-		TextBody = "This email was sent with Amazon SES using the AWS SDK for Go."
-		CharSet  = "UTF-8"
-	)
+	type AuthEmailInputStruct struct {
+		Email string `json:"email"`
+	}
+	body := &AuthEmailInputStruct{}
+	if err := ctx.BindJSON(body); err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
 
-	result, err := c.SES.SendEmail(&ses.SendEmailInput{
-		Destination: &ses.Destination{
-			CcAddresses: []*string{},
-			ToAddresses: []*string{
-				aws.String(Recipient),
-			},
+	rand.Seed(time.Now().Unix())
+	code := fmt.Sprintf("%05d", rand.Intn(100000))
+	codeExpiry := time.Now().Add(24 * time.Hour).String()
+
+	c.DynamoDB.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String(c.secrets.verificationTable),
+		Item: map[string]*dynamodb.AttributeValue{
+			"code":       {S: aws.String(code)},
+			"codeExpiry": {S: aws.String(codeExpiry)},
 		},
-		Message: &ses.Message{
-			Body: &ses.Body{
-				Html: &ses.Content{
-					Charset: aws.String(CharSet),
-					Data:    aws.String(HtmlBody),
-				},
-				Text: &ses.Content{
-					Charset: aws.String(CharSet),
-					Data:    aws.String(TextBody),
-				},
-			},
-			Subject: &ses.Content{
-				Charset: aws.String(CharSet),
-				Data:    aws.String(Subject),
-			},
-		},
-		Source: aws.String(Sender),
 	})
-
-	if err != nil {
-		c.l.Print(err)
+	if err := c.MailClient.SendEmailAuth(body.Email, code); err != nil {
+		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	c.l.Print("Email Sent to address: " + Recipient)
-	c.l.Print(result)
+	type AuthEmailOutputStruct struct {
+		CodeExpiry string `json:"codeExpiry"`
+	}
+	ctx.JSON(http.StatusOK, &AuthEmailOutputStruct{
+		CodeExpiry: codeExpiry,
+	})
 }
 
 func (c *Controller) RefreshAuthToken(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }

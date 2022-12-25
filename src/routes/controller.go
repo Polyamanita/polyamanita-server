@@ -2,7 +2,6 @@ package routes
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,17 +10,22 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/aws/aws-sdk-go/service/ses"
-	"github.com/aws/aws-sdk-go/service/ses/sesiface"
+	"github.com/polyamanita/polyamanita-server/src/clients/mail"
+	"github.com/polyamanita/polyamanita-server/src/lib"
 )
 
 type Controller struct {
-	SES         sesiface.SESAPI
-	S3          s3iface.S3API
-	DynamoDB    dynamodbiface.DynamoDBAPI
-	l           *log.Logger
-	jwtKey      []byte
-	environment string
+	S3         s3iface.S3API
+	DynamoDB   dynamodbiface.DynamoDBAPI
+	secrets    Secrets
+	MailClient mail.IFace
+	l          *lib.Logger
+}
+
+type Secrets struct {
+	verificationTable string
+	jwtKey            []byte
+	environment       string
 }
 
 func NewController() (*Controller, error) {
@@ -43,11 +47,13 @@ func NewController() (*Controller, error) {
 	}
 
 	return &Controller{
-		SES:         ses.New(sess),
-		S3:          s3.New(sess),
-		DynamoDB:    dynamodb.New(sess),
-		jwtKey:      []byte(jwtKey),
-		l:           log.New(os.Stdout, "[DEBUG] ", 0),
-		environment: environment,
+		S3:       s3.New(sess),
+		DynamoDB: dynamodb.New(sess),
+		secrets: Secrets{
+			jwtKey:            []byte(jwtKey),
+			environment:       environment,
+			verificationTable: "",
+		},
+		l: lib.NewLogger(os.Stdout),
 	}, nil
 }
