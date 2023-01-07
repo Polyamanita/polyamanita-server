@@ -17,7 +17,7 @@ import (
 type Controller struct {
 	S3       s3iface.S3API
 	DynamoDB dynamodbiface.DynamoDBAPI
-	Mail     mail.IFace
+	Mail     mail.MailIFace
 
 	secrets Secrets
 	l       *lib.Logger
@@ -63,4 +63,18 @@ func NewController(l *lib.Logger) (*Controller, error) {
 		Mail: mailClient,
 		l:    l,
 	}, nil
+}
+
+func NewTestController(S3 s3iface.S3API, DynamoDB dynamodbiface.DynamoDBAPI, Mail mail.MailIFace, l *lib.Logger) *Controller {
+	return &Controller{
+		S3:       S3,
+		DynamoDB: DynamoDB,
+		Mail:     Mail,
+		secrets: Secrets{
+			verificationTable: "some-table",
+			jwtKey:            []byte("some-key"),
+			environment:       "some-env",
+		},
+		l: l,
+	}
 }

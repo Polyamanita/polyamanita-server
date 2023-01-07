@@ -1,10 +1,10 @@
 definitions:
-  routes.AuthEmail.AuthEmailInputStruct:
+  routes.PostAuths.AuthEmailInputStruct:
     properties:
       email:
         type: string
     type: object
-  routes.AuthEmail.AuthEmailOutputStruct:
+  routes.PostAuths.AuthEmailOutputStruct:
     properties:
       codeExpiry:
         type: string
@@ -28,14 +28,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/routes.AuthEmail.AuthEmailInputStruct'
+          $ref: '#/definitions/routes.PostAuths.AuthEmailInputStruct'
       produces:
       - application/json
       responses:
         "200":
           description: Expiry time of code
           schema:
-            $ref: '#/definitions/routes.AuthEmail.AuthEmailOutputStruct'
+            $ref: '#/definitions/routes.PostAuths.AuthEmailOutputStruct'
         "500":
           description: Internal Server Error
       summary: Send a Verification Code

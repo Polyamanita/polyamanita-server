@@ -36,7 +36,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/routes.AuthEmail.AuthEmailInputStruct"
+                            "$ref": "#/definitions/routes.PostAuths.AuthEmailInputStruct"
                         }
                     }
                 ],
@@ -44,7 +44,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Expiry time of code",
                         "schema": {
-                            "$ref": "#/definitions/routes.AuthEmail.AuthEmailOutputStruct"
+                            "$ref": "#/definitions/routes.PostAuths.AuthEmailOutputStruct"
                         }
                     },
                     "500": {
@@ -55,7 +55,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "routes.AuthEmail.AuthEmailInputStruct": {
+        "routes.PostAuths.AuthEmailInputStruct": {
             "type": "object",
             "properties": {
                 "email": {
@@ -63,7 +63,7 @@ const docTemplate = `{
                 }
             }
         },
-        "routes.AuthEmail.AuthEmailOutputStruct": {
+        "routes.PostAuths.AuthEmailOutputStruct": {
             "type": "object",
             "properties": {
                 "codeExpiry": {

@@ -51,7 +51,7 @@ func RunServer(port string) {
 
 	r.POST("/session", c.Login)                 // login
 	r.DELETE("/session", c.Logout)              // logout
-	r.POST("/auth", c.AuthEmail)                // email account, get auth code
+	r.POST("/auth", c.PostAuths)                // email account, get auth code
 	r.POST("/auth/refresh", c.RefreshAuthToken) // refresh auth token
 	r.POST("/users", c.RegisterUser)            // register user
 

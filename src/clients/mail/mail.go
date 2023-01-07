@@ -9,7 +9,8 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-type IFace interface {
+//go:generate faux -i MailIFace -o ../../fakes/mail.go
+type MailIFace interface {
 	SendEmailAuth(email, code string) error
 }
 
@@ -56,4 +57,4 @@ func (c *MailClient) SendEmailAuth(email, code string) error {
 	return nil
 }
 
-var _ IFace = (*MailClient)(nil)
+var _ MailIFace = (*MailClient)(nil)

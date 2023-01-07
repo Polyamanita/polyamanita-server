@@ -15,17 +15,17 @@ func (c *Controller) Login(ctx *gin.Context) { ctx.Status(http.StatusNotImplemen
 
 func (c *Controller) Logout(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
 
-// AuthEmail godoc
+// PostAuths godoc
 //	@Summary		Send a Verification Code
 //	@Description	Sends an email to the address passed in with a verification code to verify their email
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		routes.AuthEmail.AuthEmailInputStruct	true	"Email address to send code to"
-//	@success		200		{object}	routes.AuthEmail.AuthEmailOutputStruct	"Expiry time of code"
+//	@Param			request	body		routes.PostAuths.AuthEmailInputStruct	true	"Email address to send code to"
+//	@success		200		{object}	routes.PostAuths.AuthEmailOutputStruct	"Expiry time of code"
 //	@Failure		500
 //	@Router			/auths [post]
-func (c *Controller) AuthEmail(ctx *gin.Context) {
+func (c *Controller) PostAuths(ctx *gin.Context) {
 	type AuthEmailInputStruct struct {
 		Email string `json:"email"`
 	}
