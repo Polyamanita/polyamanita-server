@@ -19,6 +19,9 @@ AWS_PROFILE=polyamanita
 JWT_KEY=some-key
 ENVIRONMENT=dev
 SENDGRID_KEY=<sendgrid api key>
+AWS_ACCESS_KEY_ID=<keyid>
+AWS_SECRET_ACCESS_KEY=<accesskey>
+AWS_DEFAULT_REGION=<region>
 ```
 
 ### Swagger

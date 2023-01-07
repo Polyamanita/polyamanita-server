@@ -47,7 +47,7 @@ func (c *Controller) AuthEmail(ctx *gin.Context) {
 			"codeExpiry": {S: aws.String(codeExpiry)},
 		},
 	})
-	if err := c.MailClient.SendEmailAuth(body.Email, code); err != nil {
+	if err := c.Mail.SendEmailAuth(body.Email, code); err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return

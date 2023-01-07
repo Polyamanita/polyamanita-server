@@ -15,11 +15,12 @@ import (
 )
 
 type Controller struct {
-	S3         s3iface.S3API
-	DynamoDB   dynamodbiface.DynamoDBAPI
-	secrets    Secrets
-	MailClient mail.IFace
-	l          *lib.Logger
+	S3       s3iface.S3API
+	DynamoDB dynamodbiface.DynamoDBAPI
+	Mail     mail.IFace
+
+	secrets Secrets
+	l       *lib.Logger
 }
 
 type Secrets struct {
@@ -28,7 +29,7 @@ type Secrets struct {
 	environment       string
 }
 
-func NewController() (*Controller, error) {
+func NewController(l *lib.Logger) (*Controller, error) {
 	jwtKey, ok := os.LookupEnv("JWT_KEY")
 	if !ok {
 		return nil, fmt.Errorf("unable to find env var JWT_KEY")
@@ -46,6 +47,11 @@ func NewController() (*Controller, error) {
 		return nil, err
 	}
 
+	mailClient, err := mail.New(l)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Controller{
 		S3:       s3.New(sess),
 		DynamoDB: dynamodb.New(sess),
@@ -54,6 +60,7 @@ func NewController() (*Controller, error) {
 			environment:       environment,
 			verificationTable: "",
 		},
-		l: lib.NewLogger(os.Stdout),
+		Mail: mailClient,
+		l:    l,
 	}, nil
 }

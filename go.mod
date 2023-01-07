@@ -43,7 +43,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
-	github.com/swaggo/swag v1.8.1 // indirect
+	github.com/swaggo/swag v1.8.1
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.2.0 // indirect
