@@ -3,6 +3,7 @@ module github.com/polyamanita/polyamanita-server
 go 1.17
 
 require (
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.35
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/joho/godotenv v1.4.0
@@ -12,6 +13,10 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.14.0 // indirect
+	github.com/aws/smithy-go v1.13.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
