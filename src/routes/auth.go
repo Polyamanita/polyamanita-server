@@ -40,13 +40,17 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 	code := fmt.Sprintf("%05d", rand.Intn(100000))
 	codeExpiry := time.Now().Add(24 * time.Hour).String()
 
-	c.DynamoDB.PutItem(&dynamodb.PutItemInput{
+	if _, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(c.secrets.verificationTable),
 		Item: map[string]*dynamodb.AttributeValue{
 			"code":       {S: aws.String(code)},
 			"codeExpiry": {S: aws.String(codeExpiry)},
 		},
-	})
+	}); err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
 	if err := c.Mail.SendEmailAuth(body.Email, code); err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
