@@ -2,7 +2,7 @@ package routes
 
 import (
 	"net/http"
-	"unicode"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -67,32 +67,16 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	//check password requirements are met
-	if len(body.Password) >= 8 {
-		var number = false
-		var upper = false
-		var special = false
-		for idx, val := range body.Password {
-			if unicode.IsNumber(val) {
-				number = true
-			}
-			if unicode.IsUpper(val) {
-				upper = true
-			}
-			if unicode.IsPunct(val) || unicode.IsSymbol(c) {
-				special = true
-			}
-		}
-
-		if number == false || upper == false || special == false {
-			//password either doesnt have a number, upper or special
-			c.l.Error(err)
-			ctx.Status(http.StatusBadRequest)
-		}
-
-	} else {
-		//password less than 8 characters
-		c.l.Error(err)
+	if len(body.Password) < 8 {
+		c.l.Error("invalid password of length ", len(body.Password))
 		ctx.Status(http.StatusBadRequest)
+		return
+	}
+	ok, err := regexp.MatchString(`(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)`, body.Password)
+	if !ok || err != nil {
+		c.l.Error("invalid password: ", err)
+		ctx.Status(http.StatusBadRequest)
+		return
 	}
 
 	//build expression to verify code is in the verification table
@@ -201,7 +185,7 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 		return
 	} else {
-		_, err = c.DynamoDB.UpdateItem(&dynamodb.PutItemInput{
+		_, err = c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
 			//update TableName once user table is added to controller (ex: c.users.userTable)
 			TableName: aws.String("Users"),
 			Key: map[string]*dynamodb.AttributeValue{
@@ -236,7 +220,7 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 	}
 
 	//search table using userid
-	response, err := c.DynamoDB.DeleteItem(&dynamodb.GetItemInput{
+	response, err := c.DynamoDB.DeleteItem(&dynamodb.DeleteItemInput{
 		//update once user table is added to controller (ex: c.users.userTable)
 		TableName: aws.String("Users"),
 		Key: map[string]*dynamodb.AttributeValue{
