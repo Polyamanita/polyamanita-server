@@ -85,18 +85,19 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
-	} else {
-		response, err = c.DynamoDB.Query(&dynamodb.QueryInput{
-			TableName:                 aws.String(c.secrets.verificationTable),
-			ExpressionAttributeNames:  expr.Names(),
-			ExpressionAttributeValues: expr.Values(),
-			KeyConditionExpression:    expr.KeyCondition(),
-		})
-		if err != nil {
-			c.l.Error(err)
-			ctx.Status(http.StatusUnauthorized)
-			return
-		}
+		return
+	}
+
+	_, err = c.DynamoDB.Query(&dynamodb.QueryInput{
+		TableName:                 aws.String(c.secrets.verificationTable),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression:    expr.KeyCondition(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusUnauthorized)
+		return
 	}
 
 	//conditionally put user into table if their username and email are not taken
