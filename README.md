@@ -6,12 +6,22 @@ Repository concerned with all things related to the Polyamanita server side
 
 To develop the server on a local machine, set up the following:
 
+### AWS CLI
+
+Follow the instructions provided here to [install](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) an aws account with profile name "polyamanita"
+
 ### Environment
 
 Create a `.env` file with the following contents
 
 ```env
-JWT_KEY="some-key"
+AWS_PROFILE=polyamanita
+JWT_KEY=some-key
+ENVIRONMENT=dev
+SENDGRID_KEY=<sendgrid api key>
+AWS_ACCESS_KEY_ID=<keyid>
+AWS_SECRET_ACCESS_KEY=<accesskey>
+AWS_DEFAULT_REGION=<region>
 ```
 
 ### Swagger

@@ -8,6 +8,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/polyamanita/polyamanita-server/src/lib"
 	"github.com/polyamanita/polyamanita-server/src/routes"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -32,7 +33,9 @@ func main() {
 func RunServer(port string) {
 	r := gin.New()
 
-	c, err := routes.NewController()
+	l := lib.NewLogger(os.Stdout)
+
+	c, err := routes.NewController(l)
 	if err != nil {
 		log.Fatalf("error creating client: %s", err.Error())
 	}
@@ -48,7 +51,7 @@ func RunServer(port string) {
 
 	r.POST("/session", c.Login)                 // login
 	r.DELETE("/session", c.Logout)              // logout
-	r.POST("/auth", c.AuthEmail)                // email account, get auth code
+	r.POST("/auth", c.PostAuths)                // email account, get auth code
 	r.POST("/auth/refresh", c.RefreshAuthToken) // refresh auth token
 	r.POST("/users", c.RegisterUser)            // register user
 

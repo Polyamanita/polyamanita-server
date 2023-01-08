@@ -15,7 +15,63 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {}
+    "paths": {
+        "/auths": {
+            "post": {
+                "description": "Sends an email to the address passed in with a verification code to verify their email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send a Verification Code",
+                "parameters": [
+                    {
+                        "description": "Email address to send code to",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.PostAuths.AuthEmailInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expiry time of code",
+                        "schema": {
+                            "$ref": "#/definitions/routes.PostAuths.AuthEmailOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "routes.PostAuths.AuthEmailInputStruct": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.PostAuths.AuthEmailOutputStruct": {
+            "type": "object",
+            "properties": {
+                "codeExpiry": {
+                    "type": "string"
+                }
+            }
+        }
+    }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
