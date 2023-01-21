@@ -20,7 +20,9 @@ import (
 //	@description	API for Polyamanita server functions
 //	@host			<some url>
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
 
 	port, ok := os.LookupEnv("PORT")
 	if !ok {

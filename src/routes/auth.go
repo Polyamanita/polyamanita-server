@@ -41,7 +41,7 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 	codeExpiry := time.Now().Add(24 * time.Hour).String()
 
 	if _, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
-		TableName: aws.String(c.secrets.verificationTable),
+		TableName: aws.String(c.secrets.ddbVerificationTable),
 		Item: map[string]*dynamodb.AttributeValue{
 			"code":       {S: aws.String(code)},
 			"codeExpiry": {S: aws.String(codeExpiry)},

@@ -24,9 +24,11 @@ type Controller struct {
 }
 
 type Secrets struct {
-	verificationTable string
-	jwtKey            []byte
-	environment       string
+	ddbVerificationTable string
+	ddbUserbaseTable     string
+	s3StoreBucket        string
+	jwtKey               []byte
+	environment          string
 }
 
 func NewController(l *lib.Logger) (*Controller, error) {
@@ -38,6 +40,21 @@ func NewController(l *lib.Logger) (*Controller, error) {
 	environment, ok := os.LookupEnv("ENVIRONMENT")
 	if !ok {
 		return nil, fmt.Errorf("unable to find env var ENVIRONMENT")
+	}
+
+	ddbUserbaseTable, ok := os.LookupEnv("AWS_DDB_TABLE_USERBASE")
+	if !ok {
+		return nil, fmt.Errorf("unable to find env var AWS_DDB_TABLE_USERBASE")
+	}
+
+	ddbVerificationTable, ok := os.LookupEnv("AWS_DDB_TABLE_VERIFICATIONCODES")
+	if !ok {
+		return nil, fmt.Errorf("unable to find env var AWS_DDB_TABLE_VERIFICATIONCODES")
+	}
+
+	s3StoreTable, ok := os.LookupEnv("AWS_S3_BUCKET_POLYAMANITA_STORE")
+	if !ok {
+		return nil, fmt.Errorf("unable to find env var AWS_S3_BUCKET_POLYAMANITA_STORE")
 	}
 
 	sess, err := session.NewSession(&aws.Config{
@@ -56,9 +73,11 @@ func NewController(l *lib.Logger) (*Controller, error) {
 		S3:       s3.New(sess),
 		DynamoDB: dynamodb.New(sess),
 		secrets: Secrets{
-			jwtKey:            []byte(jwtKey),
-			environment:       environment,
-			verificationTable: "",
+			jwtKey:               []byte(jwtKey),
+			environment:          environment,
+			s3StoreBucket:        s3StoreTable,
+			ddbVerificationTable: ddbVerificationTable,
+			ddbUserbaseTable:     ddbUserbaseTable,
 		},
 		Mail: mailClient,
 		l:    l,
@@ -71,9 +90,11 @@ func NewTestController(S3 s3iface.S3API, DynamoDB dynamodbiface.DynamoDBAPI, Mai
 		DynamoDB: DynamoDB,
 		Mail:     Mail,
 		secrets: Secrets{
-			verificationTable: "some-table",
-			jwtKey:            []byte("some-key"),
-			environment:       "some-env",
+			ddbVerificationTable: "some-verification-table",
+			ddbUserbaseTable:     "some-userbase-table",
+			s3StoreBucket:        "some-s3store-bucket",
+			jwtKey:               []byte("some-key"),
+			environment:          "some-env",
 		},
 		l: l,
 	}

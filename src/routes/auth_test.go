@@ -50,7 +50,7 @@ func TestPostAuths(t *testing.T) {
 
 		// Validate that the call made correct function calls
 		gotTable := *fakeDynamo.PutItemCall.Receives.PutItemInput.TableName
-		assert.Equal(t, "some-table", gotTable)
+		assert.Equal(t, "some-verification-table", gotTable)
 		gotCode := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["code"].S
 		assert.Regexp(t, regexp.MustCompile(`\b\d{5}\b`), gotCode)
 		gotExpiry := fakeDynamo.PutItemCall.Receives.PutItemInput.Item["codeExpiry"].S
