@@ -36,7 +36,7 @@ jobs:
       run: | 
         zip -r ${ARTIFACT_FILENAME} ./* 
 
-        aws s3 cp ./${GITHUB_SHA}.zip s3://${AWS_S3_ARTIFACTS_BUCKET}/${AWS_S3_ARTIFACT_KEY}
+        aws s3 cp ./${ARTIFACT_FILENAME}.zip s3://${AWS_S3_ARTIFACTS_BUCKET}/${AWS_S3_ARTIFACT_KEY}
         
         aws elasticbeanstalk create-application-version \
           --application-name ${AWS_EB_APPLICATION_NAME} \
