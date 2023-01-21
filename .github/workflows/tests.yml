@@ -32,7 +32,7 @@ jobs:
       
     - name: Upload to S3
       run: |
-        aws s3 sync ./${GITHUB_SHA}.zip s3://polyamanita-artifacts/${GITHUB_SHA}
+        aws s3 cp ./${GITHUB_SHA}.zip s3://polyamanita-artifacts/${GITHUB_SHA}
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
