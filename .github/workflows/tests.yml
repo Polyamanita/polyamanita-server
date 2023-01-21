@@ -1,3 +1,8 @@
+env:
+  AWS_S3_ARTIFACTS_BUCKET: polyamanita-artifacts
+  ARTIFACT_FILENAME: ${GITHUB_SHA}
+  AWS_EB_APPLICATION_NAME: polyamanita-server-dev
+
 on:
   push:
     branches: [ "main" ]
@@ -28,15 +33,30 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Zip Directory
-      run: zip -r ${GITHUB_SHA} ./* 
+      run: zip -r ${ARTIFACT_FILENAME} ./* 
       
     - name: Upload to S3
       run: |
-        aws s3 cp ./${GITHUB_SHA}.zip s3://polyamanita-artifacts/${GITHUB_SHA}
+        aws s3 cp ./${GITHUB_SHA}.zip s3://${AWS_S3_ARTIFACTS_BUCKET}/${AWS_S3_ARTIFACT_KEY}
+        
+        aws elasticbeanstalk create-application-version \
+          --application-name ${AWS_EB_APPLICATION_NAME} \
+          --version-label ${ARTIFACT_FILENAME} \
+          --source-bundle S3Bucket=${AWS_S3_ARTIFACTS_BUCKET},S3Key=${AWS_S3_ARTIFACT_KEY} \
+          --auto-create-application \
+          --tags Key=COMMIT_SHA,Value=${GITHUB_SHA} \
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: 'us-east-1'
+  
+  deploy_dev:
+    needs: [upload_s3]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to Dev
+      run: |
+        
       
       
       
