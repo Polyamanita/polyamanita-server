@@ -34,14 +34,14 @@ jobs:
     
     - name: Upload to S3
       run: | 
-        zip -r ${ARTIFACT_FILENAME} ./* 
+        zip -r ${{ARTIFACT_FILENAME}} ./* 
 
-        aws s3 cp ./${ARTIFACT_FILENAME}.zip s3://${AWS_S3_ARTIFACTS_BUCKET}/${AWS_S3_ARTIFACT_KEY}
+        aws s3 cp ./${{ARTIFACT_FILENAME}}.zip s3://${{AWS_S3_ARTIFACTS_BUCKET}}/${{AWS_S3_ARTIFACT_KEY}}
         
         aws elasticbeanstalk create-application-version \
-          --application-name ${AWS_EB_APPLICATION_NAME} \
-          --version-label ${ARTIFACT_FILENAME} \
-          --source-bundle S3Bucket=${AWS_S3_ARTIFACTS_BUCKET},S3Key=${AWS_S3_ARTIFACT_KEY} \
+          --application-name ${{AWS_EB_APPLICATION_NAME}} \
+          --version-label ${{ARTIFACT_FILENAME}} \
+          --source-bundle S3Bucket=${{AWS_S3_ARTIFACTS_BUCKET}},S3Key=${{AWS_S3_ARTIFACT_KEY}} \
           --auto-create-application \
           --tags Key=COMMIT_SHA,Value=${{ vars.GITHUB_SHA }} \
       env:
