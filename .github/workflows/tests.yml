@@ -1,6 +1,6 @@
 env:
   AWS_S3_ARTIFACTS_BUCKET: polyamanita-artifacts
-  AWS_EB_APPLICATION_NAME: polyamanita-server-dev
+  AWS_EB_APPLICATION_NAME: polyamanita-server
 
 on:
   push:
@@ -47,14 +47,53 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: 'us-east-1'
-  
+        
   deploy_dev:
+    environment: dev
     needs: [upload_s3]
     runs-on: ubuntu-latest
     steps:
     - name: Deploy to Dev
-      run: |
-        
-      
-      
+      run: | 
+        aws elasticbeanstalk update-environment \
+        --application-name ${AWS_EB_APPLICATION_NAME} \
+        --environment-name ${AWS_EB_APPLICATION_NAME}-dev \
+        --version-label $GITHUB_SHA \
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: 'us-east-1'
+  
+  deploy_staging:
+    environment: staging
+    needs: [deploy_dev]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to Dev
+      run: | 
+        aws elasticbeanstalk update-environment \
+        --application-name ${AWS_EB_APPLICATION_NAME} \
+        --environment-name ${AWS_EB_APPLICATION_NAME}-staging \
+        --version-label $GITHUB_SHA \
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: 'us-east-1'
+
+  deploy_production:
+    environment: production
+    needs: [deploy_staging]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to Dev
+      run: | 
+        aws elasticbeanstalk update-environment \
+        --application-name ${AWS_EB_APPLICATION_NAME} \
+        --environment-name ${AWS_EB_APPLICATION_NAME}-production \
+        --version-label $GITHUB_SHA \
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: 'us-east-1'
+    
       
