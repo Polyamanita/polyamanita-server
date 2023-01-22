@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -141,4 +144,67 @@ func TestAddCaptures(t *testing.T) {
 	assert.Equal(t, aws.String("some-userbase-table"), dynamoMock.UpdateItemCall.Receives.UpdateItemInput.TableName)
 
 	assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+}
+
+func TestGetCapturesList(t *testing.T) {
+	t.Run("when the call is successful", func(t *testing.T) {
+		fakeDynamo := fakes.DynamoDBAPI{}
+
+		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodGet,
+			"/captures",
+			io.NopCloser(strings.NewReader(`
+			{
+				"userid": "12321jkasdas"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.GetCapturesList(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		gotResp, err := ioutil.ReadAll(w.Body)
+		assert.NoError(t, err)
+		assert.NotNil(t, string(gotResp))
+
+		// Validate that the call made correct function calls
+		gotTable := *fakeDynamo.QueryCall.Receives.QueryInput.TableName
+		assert.Equal(t, "CapturedMushrooms", gotTable)
+
+		gotUserid := fakeDynamo.QueryCall.Receives.QueryInput.ExpressionAttributeValues
+		userid := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("12321jkasdas")}}
+		assert.Equal(t, gotUserid, userid)
+	})
+
+	t.Run("when the body request is invalid", func(t *testing.T) {
+		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodGet,
+			"/captures",
+			io.NopCloser(strings.NewReader(`
+			"userid": "12321jkasdas"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.GetCapturesList(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
+	})
 }

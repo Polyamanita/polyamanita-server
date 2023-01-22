@@ -12,7 +12,43 @@ import (
 	"github.com/polyamanita/polyamanita-server/src/models"
 )
 
-func (c *Controller) GetCapturesList(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
+func (c *Controller) GetCapturesList(ctx *gin.Context) {
+	//input for getting user
+	type GetCapturesStruct struct {
+		Userid string `json:"userid"`
+	}
+
+	body := &GetCapturesStruct{}
+	if err := ctx.BindJSON(body); err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	//build expression to query table
+	keyEx := e.Key("userid").Equal(e.Value(body.Userid))
+	expr, err := e.NewBuilder().WithKeyCondition(keyEx).Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	}
+
+	response, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+		//update TableName once mushroom table is added to controller (ex: c.captures.CapturedMushrooms)
+		TableName:                 aws.String("CapturedMushrooms"),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression:    expr.KeyCondition(),
+	})
+
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
 
 // AddCaptures godoc
 //	@Summary		Add a new list of captures to the user
