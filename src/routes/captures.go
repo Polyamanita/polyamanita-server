@@ -42,12 +42,11 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
-		return
 	}
 
-	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+	response, err := c.DynamoDB.Query(&dynamodb.QueryInput{
 		//update TableName once mushroom table is added to controller (ex: c.captures.CapturedMushrooms)
-		TableName:                 aws.String(c.secrets.ddbMushroomTable),
+		TableName:                 aws.String("CapturedMushrooms"),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
@@ -59,18 +58,7 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 		return
 	}
 
-	if queryResp.Items != nil {
-		c.l.Debug("User not found: ", body.Userid)
-		ctx.Status(http.StatusNotFound)
-		return
-	}
-
-	type GetOutputStruct struct {
-		Items string `json:"items"`
-	}
-	ctx.JSON(http.StatusOK, &GetOutputStruct{
-		Items: *queryResp.Items[4]["instances"].S,
-	})
+	ctx.JSON(http.StatusOK, response)
 }
 
 // AddCaptures godoc
