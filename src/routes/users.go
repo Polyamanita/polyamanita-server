@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -13,7 +12,7 @@ import (
 func (c *Controller) SearchUser(ctx *gin.Context) {
 	//input for search query
 	type SearchInputStruct struct {
-		username string `json:"username"`
+		Username string `json:"username"`
 	}
 	body := &SearchInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
@@ -23,7 +22,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 	}
 
 	//build expression to query table
-	keyEx := expression.Key("username").BeginsWith(body.username)
+	keyEx := expression.Key("username").BeginsWith(body.Username)
 	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
 	if err != nil {
 		c.l.Error(err)
@@ -38,6 +37,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
 	})
+
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
@@ -45,7 +45,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 	}
 
 	//return response
-	ctx.JSON(http.StatusOK, response.Items)
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (c *Controller) RegisterUser(ctx *gin.Context) {
@@ -72,12 +72,14 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
-	ok, err := regexp.MatchString(`(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)`, body.Password)
+
+	//regex ?= broken
+	/*ok, err := regexp.MatchString(`(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)`, body.Password)
 	if !ok || err != nil {
 		c.l.Error("invalid password: ", err)
 		ctx.Status(http.StatusBadRequest)
 		return
-	}
+	}*/
 
 	//build expression to verify code is in the verification table
 	keyEx := expression.Key("code").BeginsWith(body.Code)
@@ -89,7 +91,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	_, err = c.DynamoDB.Query(&dynamodb.QueryInput{
-		TableName:                 aws.String(c.secrets.verificationTable),
+		TableName:                 aws.String(c.secrets.ddbVerificationTable),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
@@ -101,7 +103,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	//conditionally put user into table if their username and email are not taken
-	_, err = c.DynamoDB.PutItem(&dynamodb.PutItemInput{
+	response, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
 		//update TableName once user table is added to controller (ex: c.users.userTable)
 		TableName:           aws.String("Users"),
 		ConditionExpression: aws.String("attribute_not_exists(username) and attribute_not_exists(email)"),
@@ -120,13 +122,13 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	//return httpstatusOK
-	ctx.JSON(http.StatusOK, "")
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (c *Controller) GetUser(ctx *gin.Context) {
 	//input for getting user
 	type GetInputStruct struct {
-		userid string `json:"userid"`
+		Userid string `json:"userid"`
 	}
 
 	body := &GetInputStruct{}
@@ -141,7 +143,7 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 		//update once user table is added to controller (ex: c.users.userTable)
 		TableName: aws.String("Users"),
 		Key: map[string]*dynamodb.AttributeValue{
-			"userid": {S: aws.String(body.userid)},
+			"userid": {S: aws.String(body.Userid)},
 		},
 	})
 	if err != nil {
@@ -151,18 +153,18 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 	}
 
 	//return response
-	ctx.JSON(http.StatusOK, response.Item)
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (c *Controller) UpdateUser(ctx *gin.Context) {
 	//input for updating profile
 	type UpdateInputStruct struct {
-		userid    string `json:"userid"`
-		username  string `json:"username"`
-		firstname string `json:"firstname"`
-		lastname  string `json:"lastname"`
-		password  string `json:"password"`
-		email     string `json:"email"`
+		Userid    string `json:"userid"`
+		Username  string `json:"username"`
+		Firstname string `json:"firstname"`
+		Lastname  string `json:"lastname"`
+		Password  string `json:"password"`
+		Email     string `json:"email"`
 	}
 
 	body := &UpdateInputStruct{}
@@ -173,13 +175,22 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 	}
 
 	//build expression to update user info only if password matches
-	conditionEx := expression.Equal(expression.Name("password"), expression.Value(body.password))
-	updateUsername := expression.Set(expression.Name("username"), expression.Value(body.username))
-	updateFirstname := expression.Set(expression.Name("firstname"), expression.Value(body.firstname))
-	updateLastname := expression.Set(expression.Name("lastname"), expression.Value(body.lastname))
-	updateEmail := expression.Set(expression.Name("email"), expression.Value(body.email))
+	conditionEx := expression.Equal(expression.Name("password"), expression.Value(body.Password))
 
-	expr, err := expression.NewBuilder().WithUpdate(updateUsername, updateFirstname, updateLastname, updateEmail).WithCondition(conditionEx).Build()
+	update := expression.Set(
+		expression.Name("username"),
+		expression.Value(body.Username),
+	).Set(
+		expression.Name("firstname"),
+		expression.Value(body.Firstname),
+	).Set(
+		expression.Name("lastname"),
+		expression.Value(body.Lastname),
+	).Set(
+		expression.Name("email"),
+		expression.Value(body.Email))
+
+	expr, err := expression.NewBuilder().WithUpdate(update).WithCondition(conditionEx).Build()
 
 	if err != nil {
 		c.l.Error(err)
@@ -190,7 +201,7 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 			//update TableName once user table is added to controller (ex: c.users.userTable)
 			TableName: aws.String("Users"),
 			Key: map[string]*dynamodb.AttributeValue{
-				"userid": {S: aws.String(body.userid)},
+				":0": {S: aws.String(body.Userid)},
 			},
 			ExpressionAttributeNames:  expr.Names(),
 			ExpressionAttributeValues: expr.Values(),
@@ -209,11 +220,11 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 
 func (c *Controller) DeleteUser(ctx *gin.Context) {
 	//input for deleting user
-	type GetInputStruct struct {
-		userid string `json:"userid"`
+	type DeleteInputStruct struct {
+		Userid string `json:"userid"`
 	}
 
-	body := &GetInputStruct{}
+	body := &DeleteInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusBadRequest)
@@ -225,7 +236,7 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 		//update once user table is added to controller (ex: c.users.userTable)
 		TableName: aws.String("Users"),
 		Key: map[string]*dynamodb.AttributeValue{
-			"userid": {S: aws.String(body.userid)},
+			"userid": {S: aws.String(body.Userid)},
 		},
 	})
 	if err != nil {
@@ -235,7 +246,7 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 	}
 
 	//return response
-	ctx.JSON(http.StatusOK, "")
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (c *Controller) GetUserFollowers(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
