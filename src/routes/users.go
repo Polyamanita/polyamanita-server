@@ -2,11 +2,13 @@ package routes
 
 import (
 	"net/http"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func (c *Controller) SearchUser(ctx *gin.Context) {
@@ -31,8 +33,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 	}
 
 	response, err := c.DynamoDB.Query(&dynamodb.QueryInput{
-		//update TableName once user table is added to controller (ex: c.users.userTable)
-		TableName:                 aws.String("Users"),
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
@@ -41,6 +42,12 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if len(response.Items) == 0 {
+		c.l.Debug("User not found: ", body.Username)
+		ctx.Status(http.StatusNotFound)
 		return
 	}
 
@@ -53,8 +60,8 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	type RegisterInputStruct struct {
 		Code      string `json:"code"`
 		Username  string `json:"username"`
-		FirstName string `json:"firstname"`
-		LastName  string `json:"lastname"`
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
 		Password  string `json:"password"`
 		Email     string `json:"email"`
 	}
@@ -73,28 +80,27 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
-	//regex ?= broken
-	/*ok, err := regexp.MatchString(`(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W)`, body.Password)
-	if !ok || err != nil {
+	// Matcher checks if the password is INVALID, not valid
+	ok, err := regexp.MatchString(`"^(.{0,7}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"`, body.Password)
+	if ok || err != nil {
 		c.l.Error("invalid password: ", err)
 		ctx.Status(http.StatusBadRequest)
 		return
-	}*/
+	}
 
 	//build expression to verify code is in the verification table
-	keyEx := expression.Key("code").BeginsWith(body.Code)
-	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
+	expr, err := expression.NewBuilder().
+		WithKeyCondition(expression.Key("code").BeginsWith(body.Code)).
+		Build()
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	_, err = c.DynamoDB.Query(&dynamodb.QueryInput{
-		TableName:                 aws.String(c.secrets.ddbVerificationTable),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		KeyConditionExpression:    expr.KeyCondition(),
+	_, err = c.DynamoDB.Scan(&dynamodb.ScanInput{
+		TableName:        aws.String(c.secrets.ddbVerificationTable),
+		FilterExpression: expr.Filter(),
 	})
 	if err != nil {
 		c.l.Error(err)
@@ -102,12 +108,16 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
+	// if queryResp.Items == nil || *queryResp.Items[""].S != body.Code {
+
+	// }
+
 	//conditionally put user into table if their username and email are not taken
 	response, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
-		//update TableName once user table is added to controller (ex: c.users.userTable)
-		TableName:           aws.String("Users"),
+		TableName:           aws.String(c.secrets.ddbUserbaseTable),
 		ConditionExpression: aws.String("attribute_not_exists(username) and attribute_not_exists(email)"),
 		Item: map[string]*dynamodb.AttributeValue{
+			"id":        {S: aws.String(uuid.NewString())},
 			"username":  {S: aws.String(body.Username)},
 			"firstname": {S: aws.String(body.FirstName)},
 			"lastname":  {S: aws.String(body.LastName)},
