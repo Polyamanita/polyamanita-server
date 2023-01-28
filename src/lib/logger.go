@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"fmt"
 	"io"
 	"log"
+	"runtime"
 )
 
 type Logger struct {
@@ -11,8 +13,8 @@ type Logger struct {
 }
 
 func NewLogger(out io.Writer) *Logger {
-	debugLog := log.New(out, "[DEBUG] ", log.Ldate|log.Ltime|log.Llongfile)
-	errLog := log.New(out, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
+	debugLog := log.New(out, "[DEBUG] ", log.Ldate|log.Ltime)
+	errLog := log.New(out, "[ERROR] ", log.Ldate|log.Ltime)
 
 	return &Logger{
 		debugLog: debugLog,
@@ -21,9 +23,15 @@ func NewLogger(out io.Writer) *Logger {
 }
 
 func (l *Logger) Debug(v ...interface{}) {
-	l.debugLog.Println(v...)
+	_, file, line, _ := runtime.Caller(1)
+	p := []interface{}{fmt.Sprintf("%v:%v:", file, line)}
+	p = append(p, v)
+	l.debugLog.Println(p...)
 }
 
 func (l *Logger) Error(v ...interface{}) {
-	l.errLog.Println(v...)
+	_, file, line, _ := runtime.Caller(1)
+	p := []interface{}{fmt.Sprintf("%v:%v:", file, line)}
+	p = append(p, v)
+	l.errLog.Println(p...)
 }

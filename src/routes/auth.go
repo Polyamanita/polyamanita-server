@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func (c *Controller) Login(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
@@ -40,9 +41,13 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 	code := fmt.Sprintf("%05d", rand.Intn(100000))
 	codeExpiry := time.Now().Add(24 * time.Hour).String()
 
+	//TODO: check if email exists already, if so replace entry
+
 	if _, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(c.secrets.ddbVerificationTable),
 		Item: map[string]*dynamodb.AttributeValue{
+			"id":         {S: aws.String(uuid.New().String())},
+			"email":      {S: aws.String(body.Email)},
 			"code":       {S: aws.String(code)},
 			"codeExpiry": {S: aws.String(codeExpiry)},
 		},
