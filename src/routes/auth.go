@@ -39,7 +39,7 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 
 	rand.Seed(time.Now().Unix())
 	code := fmt.Sprintf("%05d", rand.Intn(100000))
-	codeExpiry := time.Now().Add(24 * time.Hour).String()
+	codeExpiry := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
 
 	//TODO: check if email exists already, if so replace entry
 

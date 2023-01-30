@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -55,8 +57,18 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// RegisterUser godoc
+//	@Summary		Registers a User
+//	@Description	Registers the user with input data to DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body	routes.RegisterUser.RegisterInputStruct	true	"User Data and code from email"
+//	@success		201
+//	@Failure		500
+//	@Router			/users [post]
 func (c *Controller) RegisterUser(ctx *gin.Context) {
-	//input for registeration
+	// Input for registeration
 	type RegisterInputStruct struct {
 		Code      string `json:"code"`
 		Username  string `json:"username"`
@@ -73,7 +85,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
-	//check password requirements are met
+	// Check password requirements are met
 	if len(body.Password) < 8 {
 		c.l.Error("invalid password of length ", len(body.Password))
 		ctx.Status(http.StatusBadRequest)
@@ -88,36 +100,79 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
-	//build expression to verify code is in the verification table
+	// Check if email and code match
 	expr, err := expression.NewBuilder().
-		WithKeyCondition(expression.Key("code").BeginsWith(body.Code)).
+		WithFilter(expression.Name("email").Equal(expression.Value(body.Email)).
+			And(expression.Name("code").Equal(expression.Value(body.Code)))).
 		Build()
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
-
-	_, err = c.DynamoDB.Scan(&dynamodb.ScanInput{
-		TableName:        aws.String(c.secrets.ddbVerificationTable),
-		FilterExpression: expr.Filter(),
+	scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+		TableName:                 aws.String(c.secrets.ddbVerificationTable),
 	})
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusUnauthorized)
 		return
 	}
+	if *scanResp.Count == 0 {
+		c.l.Error(fmt.Sprintf(`couldn't find email "%v" with code "%v"`, body.Email, body.Code))
+		ctx.Status(http.StatusUnauthorized)
+		return
+	}
 
-	// if queryResp.Items == nil || *queryResp.Items[""].S != body.Code {
+	// check expiration
+	expiry, err := time.Parse(time.RFC3339, *scanResp.Items[0]["codeExpiry"].S)
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+	if time.Now().After(expiry) {
+		c.l.Debug(fmt.Sprintf("code expired when registerring email: %v code: %v", body.Email, body.Code))
+		ctx.Status(http.StatusUnauthorized)
+		return
+	}
 
-	// }
+	// check if username / email taken
+	expr, err = expression.NewBuilder().
+		WithFilter(expression.Name("email").Equal(expression.Value(body.Email)).
+			Or(expression.Name("username").Equal(expression.Value(body.Username)))).
+		Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+	scanResp, err = c.DynamoDB.Scan(&dynamodb.ScanInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusUnauthorized)
+		return
+	}
+	if *scanResp.Count != 0 {
+		c.l.Error(fmt.Sprintf(`username "%v" or email "%v" already in use`, body.Email, body.Email))
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
 
-	//conditionally put user into table if their username and email are not taken
-	response, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
-		TableName:           aws.String(c.secrets.ddbUserbaseTable),
-		ConditionExpression: aws.String("attribute_not_exists(username) and attribute_not_exists(email)"),
+	// put user into table
+	id := uuid.NewString()
+	_, err = c.DynamoDB.PutItem(&dynamodb.PutItemInput{
+		TableName: aws.String(c.secrets.ddbUserbaseTable),
 		Item: map[string]*dynamodb.AttributeValue{
-			"id":        {S: aws.String(uuid.NewString())},
+			"id":        {S: aws.String(id)},
 			"username":  {S: aws.String(body.Username)},
 			"firstname": {S: aws.String(body.FirstName)},
 			"lastname":  {S: aws.String(body.LastName)},
@@ -131,8 +186,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
-	//return httpstatusOK
-	ctx.JSON(http.StatusOK, response)
+	ctx.Status(http.StatusCreated)
 }
 
 func (c *Controller) GetUser(ctx *gin.Context) {

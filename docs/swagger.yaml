@@ -9,6 +9,21 @@ definitions:
       codeExpiry:
         type: string
     type: object
+  routes.RegisterUser.RegisterInputStruct:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
 host: <some url>
 info:
   contact: {}
@@ -41,4 +56,26 @@ paths:
       summary: Send a Verification Code
       tags:
       - Auth
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Registers the user with input data to DDB
+      parameters:
+      - description: User Data and code from email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.RegisterUser.RegisterInputStruct'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "500":
+          description: Internal Server Error
+      summary: Registers a User
+      tags:
+      - Users
 swagger: "2.0"
