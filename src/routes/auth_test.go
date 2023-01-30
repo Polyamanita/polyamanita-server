@@ -1,6 +1,7 @@
 package routes_test
 
 import (
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gin-gonic/gin"
 	"github.com/polyamanita/polyamanita-server/src/fakes"
 	"github.com/polyamanita/polyamanita-server/src/lib"
@@ -81,5 +84,49 @@ func TestPostAuths(t *testing.T) {
 
 		// Validate that the response is correct
 		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
+	})
+}
+
+func TestLogin(t *testing.T) {
+	t.Run("when the login is successful", func(t *testing.T) {
+		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Count: aws.Int64(1),
+			Items: []map[string]*dynamodb.AttributeValue{
+				{"id": {S: aws.String("some-id")}},
+			},
+		}
+
+		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodPost,
+			"/auth",
+			io.NopCloser(strings.NewReader(`
+			{
+				"email": "some-email@domain.com",
+				"password": "some-password"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.Login(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		type resp struct {
+			Id          string `json:"id"`
+			AccessToken string `json:"accessToken"`
+		}
+		gotResp := &resp{}
+		json.NewDecoder(w.Body).Decode(gotResp)
+
+		assert.Equal(t, "some-id", gotResp.Id)
 	})
 }

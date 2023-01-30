@@ -61,6 +61,8 @@ func (c *Controller) Login(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetCookie("token", token, int(time.Now().Add(24*time.Hour).Unix()), "", "", true, false)
+
 	type LoginOutputStruct struct {
 		Id          string `json:"id"`
 		AccessToken string `json:"accessToken"`
