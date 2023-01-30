@@ -34,27 +34,26 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		return
 	}
 
-	response, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
 		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
 	})
-
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	if len(response.Items) == 0 {
+	if len(queryResp.Items) == 0 {
 		c.l.Debug("User not found: ", body.Username)
 		ctx.Status(http.StatusNotFound)
 		return
 	}
 
 	//return response
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, queryResp)
 }
 
 // RegisterUser godoc

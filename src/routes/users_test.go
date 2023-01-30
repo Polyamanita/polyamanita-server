@@ -1,6 +1,7 @@
 package routes_test
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -21,6 +22,9 @@ import (
 func TestSearchUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.QueryCall.Returns.QueryOutput = &dynamodb.QueryOutput{
+			Items: []map[string]*dynamodb.AttributeValue{{}},
+		}
 
 		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
 
@@ -49,7 +53,7 @@ func TestSearchUser(t *testing.T) {
 
 		// Validate the correct table
 		gotTable := *fakeDynamo.QueryCall.Receives.QueryInput.TableName
-		assert.Equal(t, "Users", gotTable)
+		assert.Equal(t, "some-userbase-table", gotTable)
 
 		// Validate the query input
 		gotUsername := fakeDynamo.QueryCall.Receives.QueryInput.ExpressionAttributeValues
@@ -87,6 +91,30 @@ func TestSearchUser(t *testing.T) {
 func TestRegisterUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.ScanCall.Stub = func(si *dynamodb.ScanInput) (*dynamodb.ScanOutput, error) {
+			fmt.Println("in stub")
+			if *si.TableName == "some-verification-table" {
+				fmt.Println("in call")
+				return &dynamodb.ScanOutput{
+					Items: []map[string]*dynamodb.AttributeValue{
+						{
+							"codeExpiry": {S: aws.String("9999-01-30T18:48:49-05:00")},
+						},
+					},
+					Count: aws.Int64(1),
+				}, nil
+			}
+			if *si.TableName == "some-userbase-table" {
+				return &dynamodb.ScanOutput{
+					Count: aws.Int64(0),
+				}, nil
+			}
+
+			return nil, nil
+		}
+		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Items: []map[string]*dynamodb.AttributeValue{},
+		}
 
 		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
 
@@ -113,21 +141,21 @@ func TestRegisterUser(t *testing.T) {
 		c.RegisterUser(ctx)
 
 		// Validate that the response is correct
-		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+		assert.Equal(t, http.StatusCreated, ctx.Writer.Status())
 
 		_, err := ioutil.ReadAll(w.Body)
 		assert.NoError(t, err)
 
 		// Validate the correct tables
-		gotTableCode := *fakeDynamo.QueryCall.Receives.QueryInput.TableName
-		assert.Equal(t, "some-verification-table", gotTableCode)
+		gotTableCode := *fakeDynamo.ScanCall.Receives.ScanInput.TableName
+		assert.Equal(t, "some-userbase-table", gotTableCode)
 		gotTableUser := *fakeDynamo.PutItemCall.Receives.PutItemInput.TableName
-		assert.Equal(t, "Users", gotTableUser)
+		assert.Equal(t, "some-userbase-table", gotTableUser)
 
 		// Validate the query input
-		gotCode := fakeDynamo.QueryCall.Receives.QueryInput.ExpressionAttributeValues
-		code := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("asdafwad12421")}}
-		assert.Equal(t, gotCode, code)
+		gotCode := fakeDynamo.ScanCall.Receives.ScanInput.ExpressionAttributeValues
+		wantCode := map[string]*dynamodb.AttributeValue{"code": {S: aws.String("asdafwad12421")}}
+		assert.Equal(t, gotCode, wantCode)
 
 		gotUsername := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["username"].S
 		//assert.Regexp(t, regexp.MustCompile(``), gotUsername)
