@@ -154,8 +154,8 @@ func TestRegisterUser(t *testing.T) {
 
 		// Validate the query input
 		gotCode := fakeDynamo.ScanCall.Receives.ScanInput.ExpressionAttributeValues
-		wantCode := map[string]*dynamodb.AttributeValue{"code": {S: aws.String("asdafwad12421")}}
-		assert.Equal(t, gotCode, wantCode)
+		wantCode := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("kyle@gmail.com")}, ":1": {S: aws.String("kyle25")}}
+		assert.Equal(t, wantCode, gotCode)
 
 		gotUsername := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["username"].S
 		//assert.Regexp(t, regexp.MustCompile(``), gotUsername)
