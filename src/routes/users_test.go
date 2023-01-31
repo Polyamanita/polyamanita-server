@@ -233,7 +233,7 @@ func TestGetUser(t *testing.T) {
 
 		// Validate the correct table
 		gotTable := *fakeDynamo.GetItemCall.Receives.GetItemInput.TableName
-		assert.Equal(t, "Users", gotTable)
+		assert.Equal(t, "some-userbase-table", gotTable)
 
 		// Validate the query input
 		gotUserid := *fakeDynamo.GetItemCall.Receives.GetItemInput.Key["userid"]
@@ -304,7 +304,7 @@ func TestUpdateUser(t *testing.T) {
 
 		// Validate the correct tables
 		gotTableUser := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.TableName
-		assert.Equal(t, "Users", gotTableUser)
+		assert.Equal(t, "some-userbase-table", gotTableUser)
 
 		// Validate the query input
 		gotUserid := fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.Key
@@ -380,7 +380,7 @@ func TestDeleteUser(t *testing.T) {
 
 		// Validate the correct table
 		gotTable := *fakeDynamo.DeleteItemCall.Receives.DeleteItemInput.TableName
-		assert.Equal(t, "Users", gotTable)
+		assert.Equal(t, "some-userbase-table", gotTable)
 
 		// Validate the query input
 		gotUserid := *fakeDynamo.DeleteItemCall.Receives.DeleteItemInput.Key["userid"]

@@ -53,6 +53,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/captures": {
+            "get": {
+                "description": "Gets a list of captures from a User with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Gets a list of captures from a User",
+                "parameters": [
+                    {
+                        "description": "Userid",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetCapturesList.GetCapturesStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "string username",
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetUser.GetOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/session": {
             "delete": {
                 "description": "Just deletes the cookie the user was using to login",
@@ -71,6 +108,73 @@ const docTemplate = `{
             }
         },
         "/users": {
+            "get": {
+                "description": "Gets one user with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get a User",
+                "parameters": [
+                    {
+                        "description": "Userid",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetUser.GetInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "string username",
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetUser.GetOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates a User with input data to DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Updates a User",
+                "parameters": [
+                    {
+                        "description": "User data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateUser.UpdateInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
             "post": {
                 "description": "Registers the user with input data to DDB",
                 "consumes": [
@@ -95,8 +199,40 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created"
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a User with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Deletes a User",
+                "parameters": [
+                    {
+                        "description": "Userid",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.DeleteUser.DeleteInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -234,11 +370,43 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.DeleteUser.DeleteInputStruct": {
+            "type": "object",
+            "properties": {
+                "userid": {
+                    "type": "string"
+                }
+            }
+        },
         "routes.GetCapture.GetCaptureOutputStruct": {
             "type": "object",
             "properties": {
                 "capture": {
                     "$ref": "#/definitions/models.Capture"
+                }
+            }
+        },
+        "routes.GetCapturesList.GetCapturesStruct": {
+            "type": "object",
+            "properties": {
+                "userid": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.GetUser.GetInputStruct": {
+            "type": "object",
+            "properties": {
+                "userid": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.GetUser.GetOutputStruct": {
+            "type": "object",
+            "properties": {
+                "item": {
+                    "type": "string"
                 }
             }
         },
@@ -274,6 +442,45 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.SearchUser.SearchInputStruct": {
+            "type": "object",
+            "properties": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.SearchUser.SearchOutputStruct": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.UpdateUser.UpdateInputStruct": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "firstname": {
+                    "type": "string"
+                },
+                "lastname": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "userid": {
                     "type": "string"
                 },
                 "username": {

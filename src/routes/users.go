@@ -13,6 +13,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// SearchUser godoc
+//
+//	@Summary		Searchs for a User
+//	@Description	Searchs for Users with input data from DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		routes.SearchUser.SearchInputStruct		true	"Username"
+//	@success		201		{object}	routes.SearchUser.SearchOutputStruct	"String Array of Usernames"
+//	@Failure		500
+//	@Router			/users [get]
 func (c *Controller) SearchUser(ctx *gin.Context) {
 	//input for search query
 	type SearchInputStruct struct {
@@ -46,24 +57,29 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		return
 	}
 
-	if len(queryResp.Items) == 0 {
+	if queryResp.Items != nil {
 		c.l.Debug("User not found: ", body.Username)
 		ctx.Status(http.StatusNotFound)
 		return
 	}
 
-	//return response
-	ctx.JSON(http.StatusOK, queryResp)
+	type SearchOutputStruct struct {
+		Items string `json:"items"`
+	}
+	ctx.JSON(http.StatusOK, SearchOutputStruct{
+		Items: *queryResp.Items[0]["username"].S,
+	})
 }
 
 // RegisterUser godoc
+//
 //	@Summary		Registers a User
 //	@Description	Registers the user with input data to DDB
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body	routes.RegisterUser.RegisterInputStruct	true	"User Data and code from email"
-//	@success		201
+//	@success		200
 //	@Failure		500
 //	@Router			/users [post]
 func (c *Controller) RegisterUser(ctx *gin.Context) {
@@ -188,6 +204,17 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
+// GetUser godoc
+//
+//	@Summary		Get a User
+//	@Description	Gets one user with input data from DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		routes.GetUser.GetInputStruct	true	"Userid"
+//	@success		201		{object}	routes.GetUser.GetOutputStruct	"string username"
+//	@Failure		500
+//	@Router			/users [get]
 func (c *Controller) GetUser(ctx *gin.Context) {
 	//input for getting user
 	type GetInputStruct struct {
@@ -203,8 +230,7 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 
 	//search table using userid
 	response, err := c.DynamoDB.GetItem(&dynamodb.GetItemInput{
-		//update once user table is added to controller (ex: c.users.userTable)
-		TableName: aws.String("Users"),
+		TableName: aws.String(c.secrets.ddbUserbaseTable),
 		Key: map[string]*dynamodb.AttributeValue{
 			"userid": {S: aws.String(body.Userid)},
 		},
@@ -215,10 +241,31 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	//return response
-	ctx.JSON(http.StatusOK, response)
+	if response.Item != nil {
+		c.l.Debug("User not found: ", body.Userid)
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+
+	type GetOutputStruct struct {
+		Item string `json:"item"`
+	}
+	ctx.JSON(http.StatusOK, &GetOutputStruct{
+		Item: *response.Item["username"].S,
+	})
 }
 
+// UpdateUser godoc
+//
+//	@Summary		Updates a User
+//	@Description	Updates a User with input data to DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body	routes.UpdateUser.UpdateInputStruct	true	"User data"
+//	@success		200
+//	@Failure		500
+//	@Router			/users [put]
 func (c *Controller) UpdateUser(ctx *gin.Context) {
 	//input for updating profile
 	type UpdateInputStruct struct {
@@ -261,8 +308,7 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 		return
 	} else {
 		_, err = c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
-			//update TableName once user table is added to controller (ex: c.users.userTable)
-			TableName: aws.String("Users"),
+			TableName: aws.String(c.secrets.ddbUserbaseTable),
 			Key: map[string]*dynamodb.AttributeValue{
 				":0": {S: aws.String(body.Userid)},
 			},
@@ -278,9 +324,20 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 		}
 	}
 	//return httpstatusOK
-	ctx.JSON(http.StatusOK, "")
+	ctx.Status(http.StatusOK)
 }
 
+// DeleteUser godoc
+//
+//	@Summary		Deletes a User
+//	@Description	Deletes a User with input data from DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body	routes.DeleteUser.DeleteInputStruct	true	"Userid"
+//	@success		200
+//	@Failure		500
+//	@Router			/users [delete]
 func (c *Controller) DeleteUser(ctx *gin.Context) {
 	//input for deleting user
 	type DeleteInputStruct struct {
@@ -295,9 +352,8 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 	}
 
 	//search table using userid
-	response, err := c.DynamoDB.DeleteItem(&dynamodb.DeleteItemInput{
-		//update once user table is added to controller (ex: c.users.userTable)
-		TableName: aws.String("Users"),
+	_, err := c.DynamoDB.DeleteItem(&dynamodb.DeleteItemInput{
+		TableName: aws.String(c.secrets.ddbUserbaseTable),
 		Key: map[string]*dynamodb.AttributeValue{
 			"userid": {S: aws.String(body.Userid)},
 		},
@@ -309,7 +365,7 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 	}
 
 	//return response
-	ctx.JSON(http.StatusOK, response)
+	ctx.Status(http.StatusOK)
 }
 
 func (c *Controller) GetUserFollowers(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }

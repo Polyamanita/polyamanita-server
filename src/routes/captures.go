@@ -12,6 +12,17 @@ import (
 	"github.com/polyamanita/polyamanita-server/src/models"
 )
 
+// GetCapturesList godoc
+//
+//	@Summary		Gets a list of captures from a User
+//	@Description	Gets a list of captures from a User with input data from DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		routes.GetCapturesList.GetCapturesStruct	true	"Userid"
+//	@success		201		{object}	routes.GetUser.GetOutputStruct				"string username"
+//	@Failure		500
+//	@Router			/captures [get]
 func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	//input for getting user
 	type GetCapturesStruct struct {
@@ -31,11 +42,12 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
+		return
 	}
 
-	response, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
 		//update TableName once mushroom table is added to controller (ex: c.captures.CapturedMushrooms)
-		TableName:                 aws.String("CapturedMushrooms"),
+		TableName:                 aws.String(c.secrets.ddbMushroomTable),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
@@ -47,7 +59,18 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	if queryResp.Items != nil {
+		c.l.Debug("User not found: ", body.Userid)
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+
+	type GetOutputStruct struct {
+		Items string `json:"items"`
+	}
+	ctx.JSON(http.StatusOK, &GetOutputStruct{
+		Items: *queryResp.Items[4]["instances"].S,
+	})
 }
 
 // AddCaptures godoc

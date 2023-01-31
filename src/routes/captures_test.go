@@ -178,7 +178,7 @@ func TestGetCapturesList(t *testing.T) {
 
 		// Validate that the call made correct function calls
 		gotTable := *fakeDynamo.QueryCall.Receives.QueryInput.TableName
-		assert.Equal(t, "CapturedMushrooms", gotTable)
+		assert.Equal(t, "some-mushroom-table", gotTable)
 
 		gotUserid := fakeDynamo.QueryCall.Receives.QueryInput.ExpressionAttributeValues
 		userid := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("12321jkasdas")}}
