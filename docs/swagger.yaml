@@ -56,6 +56,17 @@ paths:
       summary: Send a Verification Code
       tags:
       - Auth
+  /session:
+    delete:
+      description: Just deletes the cookie the user was using to login
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: Logs user out of account
+      tags:
+      - Auth
   /users:
     post:
       consumes:

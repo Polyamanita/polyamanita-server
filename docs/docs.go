@@ -53,6 +53,23 @@ const docTemplate = `{
                 }
             }
         },
+        "/session": {
+            "delete": {
+                "description": "Just deletes the cookie the user was using to login",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logs user out of account",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/users": {
             "post": {
                 "description": "Registers the user with input data to DDB",
