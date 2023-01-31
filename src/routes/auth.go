@@ -73,7 +73,18 @@ func (c *Controller) Login(ctx *gin.Context) {
 	})
 }
 
-func (c *Controller) Logout(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
+// Logout godoc
+//	@Summary		Logs user out of account
+//	@Description	Just deletes the cookie the user was using to login
+//	@Tags			Auth
+//	@success		200
+//	@Failure		500
+//	@Router			/session [delete]
+func (c *Controller) Logout(ctx *gin.Context) {
+	ctx.SetCookie("token", "", -1, "", "", false, false)
+
+	ctx.Status(http.StatusOK)
+}
 
 // PostAuths godoc
 //	@Summary		Send a Verification Code
