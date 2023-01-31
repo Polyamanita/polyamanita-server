@@ -14,7 +14,11 @@ import (
 
 func (c *Controller) Login(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
 
-func (c *Controller) Logout(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
+func (c *Controller) Logout(ctx *gin.Context) {
+	ctx.SetCookie("token", "", -1, "", "", false, false)
+
+	ctx.Status(http.StatusOK)
+}
 
 // PostAuths godoc
 //	@Summary		Send a Verification Code
