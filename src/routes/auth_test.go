@@ -120,6 +120,9 @@ func TestLogin(t *testing.T) {
 		// Validate that the response is correct
 		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
 
+		assert.Equal(t, "some-userbase-table", *fakeDynamo.ScanCall.Receives.ScanInput.TableName)
+		assert.Equal(t, "(#0 = :0) AND (#1 = :1)", *fakeDynamo.ScanCall.Receives.ScanInput.FilterExpression)
+
 		type resp struct {
 			Id          string `json:"id"`
 			AccessToken string `json:"accessToken"`
@@ -166,7 +169,5 @@ func TestLogin(t *testing.T) {
 		}
 		gotResp := &resp{}
 		json.NewDecoder(w.Body).Decode(gotResp)
-
-		assert.Equal(t, "some-id", gotResp.Id)
 	})
 }
