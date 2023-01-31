@@ -49,7 +49,7 @@ func (c *Controller) Login(ctx *gin.Context) {
 	}
 	if *scanResp.Count == 0 {
 		c.l.Debug(fmt.Sprintf(`invalid credentials for %v`, body.Email))
-		ctx.Status(http.StatusBadRequest)
+		ctx.Status(http.StatusUnauthorized)
 		return
 	}
 

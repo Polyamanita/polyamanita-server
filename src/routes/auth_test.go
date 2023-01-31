@@ -104,7 +104,7 @@ func TestLogin(t *testing.T) {
 		ctx, _ := gin.CreateTestContext(w)
 		ctx.Request = httptest.NewRequest(
 			http.MethodPost,
-			"/auth",
+			"/session",
 			io.NopCloser(strings.NewReader(`
 			{
 				"email": "some-email@domain.com",
@@ -119,6 +119,46 @@ func TestLogin(t *testing.T) {
 
 		// Validate that the response is correct
 		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		type resp struct {
+			Id          string `json:"id"`
+			AccessToken string `json:"accessToken"`
+		}
+		gotResp := &resp{}
+		json.NewDecoder(w.Body).Decode(gotResp)
+
+		assert.Equal(t, "some-id", gotResp.Id)
+	})
+
+	t.Run("when the credentials don't match", func(t *testing.T) {
+		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Count: aws.Int64(0),
+			Items: []map[string]*dynamodb.AttributeValue{},
+		}
+
+		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodPost,
+			"/session",
+			io.NopCloser(strings.NewReader(`
+			{
+				"email": "some-email@domain.com",
+				"password": "some-password"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.Login(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusUnauthorized, ctx.Writer.Status())
 
 		type resp struct {
 			Id          string `json:"id"`
