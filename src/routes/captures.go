@@ -37,6 +37,7 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
+		return
 	}
 
 	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{

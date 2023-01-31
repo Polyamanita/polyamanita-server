@@ -197,6 +197,5 @@ func TestGetCapturesList(t *testing.T) {
 		// Validate that the call made correct function calls
 		assert.Equal(t, "some-userbase-table",
 			*dynamoMock.QueryCall.Receives.QueryInput.TableName)
-
 	})
 }
