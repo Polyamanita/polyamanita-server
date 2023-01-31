@@ -1,7 +1,6 @@
 package routes_test
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -92,9 +91,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
 		fakeDynamo.ScanCall.Stub = func(si *dynamodb.ScanInput) (*dynamodb.ScanOutput, error) {
-			fmt.Println("in stub")
 			if *si.TableName == "some-verification-table" {
-				fmt.Println("in call")
 				return &dynamodb.ScanOutput{
 					Items: []map[string]*dynamodb.AttributeValue{
 						{
