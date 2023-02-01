@@ -57,7 +57,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		return
 	}
 
-	if queryResp.Items != nil {
+	if queryResp == nil {
 		c.l.Debug("User not found: ", body.Username)
 		ctx.Status(http.StatusNotFound)
 		return
@@ -241,7 +241,7 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	if response.Item != nil {
+	if response == nil {
 		c.l.Debug("User not found: ", body.Userid)
 		ctx.Status(http.StatusNotFound)
 		return
