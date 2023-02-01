@@ -199,3 +199,69 @@ func TestGetCapturesList(t *testing.T) {
 			*dynamoMock.QueryCall.Receives.QueryInput.TableName)
 	})
 }
+
+func TestDeleteCaptures(t *testing.T) {
+	t.Run("when the call is successful", func(t *testing.T) {
+		fakeDynamo := fakes.DynamoDBAPI{}
+
+		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodDelete,
+			"/captures",
+			io.NopCloser(strings.NewReader(`
+			{
+				"userid": "12321jkasdas"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.DeleteCaptures(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		_, err := ioutil.ReadAll(w.Body)
+		assert.NoError(t, err)
+
+		// Validate the correct table
+		gotTable := *fakeDynamo.DeleteItemCall.Receives.DeleteItemInput.TableName
+		assert.Equal(t, "some-mushroom-table", gotTable)
+
+		// Validate the query input
+		gotUserid := *fakeDynamo.DeleteItemCall.Receives.DeleteItemInput.Key["userid"]
+		userid := dynamodb.AttributeValue{S: aws.String("12321jkasdas")}
+		assert.Equal(t, gotUserid, userid)
+
+		//validate the query output
+
+	})
+
+	t.Run("when the body request is invalid", func(t *testing.T) {
+		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodDelete,
+			"/captures",
+			io.NopCloser(strings.NewReader(`
+				"userid": "12321jkasdas"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.DeleteCaptures(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
+	})
+}

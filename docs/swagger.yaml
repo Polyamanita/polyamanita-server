@@ -68,6 +68,11 @@ definitions:
           type: object
         type: array
     type: object
+  routes.DeleteCaptures.DeleteInputStruct:
+    properties:
+      userid:
+        type: string
+    type: object
   routes.GetCapture.GetCaptureOutputStruct:
     properties:
       capture:
@@ -150,27 +155,25 @@ paths:
       tags:
       - Auth
   /captures:
-    get:
+    delete:
       consumes:
       - application/json
-      description: Gets a list of captures from a User with input data from DDB
+      description: Deletes a User's captures with input data from DDB
       parameters:
       - description: Userid
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/routes.GetCapturesList.GetCapturesStruct'
+          $ref: '#/definitions/routes.DeleteCaptures.DeleteInputStruct'
       produces:
       - application/json
       responses:
-        "201":
-          description: string username
-          schema:
-            $ref: '#/definitions/routes.GetUser.GetOutputStruct'
+        "200":
+          description: OK
         "500":
           description: Internal Server Error
-      summary: Gets a list of captures from a User
+      summary: Deletes captures
       tags:
       - Users
   /session:

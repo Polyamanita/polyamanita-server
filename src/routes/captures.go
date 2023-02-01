@@ -146,7 +146,58 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
+// DeleteUser godoc
+//
+//	@Summary		Deletes captures
+//	@Description	Deletes a User's captures with input data from DDB
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body	routes.DeleteCaptures.DeleteInputStruct	true	"Userid"
+//	@success		200
+//	@Failure		500
+//	@Router			/captures [delete]
+func (c *Controller) DeleteCaptures(ctx *gin.Context) {
+	type DeleteInputStruct struct {
+		Userid string `json:"userid"`
+	}
+
+	body := &DeleteInputStruct{}
+	if err := ctx.BindJSON(body); err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+	rValue := "ALL_OLD"
+	for {
+		deleteResp, err := c.DynamoDB.DeleteItem(&dynamodb.DeleteItemInput{
+			TableName:    aws.String(c.secrets.ddbMushroomTable),
+			ReturnValues: &rValue,
+			Key: map[string]*dynamodb.AttributeValue{
+				"userid": {S: aws.String(body.Userid)},
+			},
+		})
+
+		if err != nil {
+			c.l.Error(err)
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
+
+		if deleteResp == nil {
+			c.l.Debug("User not found: ", body.Userid)
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+
+		if len(deleteResp.Attributes) == 0 {
+			break
+		}
+	}
+
+	//return response
+	ctx.Status(http.StatusOK)
+}
 
 // GetCapture godoc
 //	@Summary		Get information about a captured mushroom
