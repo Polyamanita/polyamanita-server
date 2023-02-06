@@ -150,7 +150,7 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 //
 //	@Summary		Deletes captures
 //	@Description	Deletes a User's captures with input data from DDB
-//	@Tags			Users
+//	@Tags			Captures
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body	routes.DeleteCaptures.DeleteInputStruct	true	"Userid"
