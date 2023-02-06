@@ -16,7 +16,7 @@ import (
 //
 //	@Summary		Gets a list of captures from a User
 //	@Description	Gets a list of captures from a User with input data from DDB
-//	@Tags			Users
+//	@Tags			Captures
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		routes.GetCapturesList.GetCapturesStruct	true	"Userid"
