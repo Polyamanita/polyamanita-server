@@ -71,6 +71,39 @@ const docTemplate = `{
             }
         },
         "/users": {
+            "get": {
+                "description": "Searchs for Users with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Searchs for a User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "username query",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "String Array of Usernames",
+                        "schema": {
+                            "$ref": "#/definitions/routes.SearchUser.SearchUsersOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
             "post": {
                 "description": "Registers the user with input data to DDB",
                 "consumes": [
@@ -95,8 +128,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created"
+                    "200": {
+                        "description": "OK"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -104,7 +137,144 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/:UserID/captures": {
+        "/users/{UserID}": {
+            "get": {
+                "description": "Gets one user with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get a User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "string username",
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetUser.GetUserOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates a User with input data to DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Updates a User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a User with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Deletes a User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/users/{UserID}/captures": {
+            "get": {
+                "description": "Gets a list of captures from a User with input data from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Captures"
+                ],
+                "summary": "Gets a list of captures from a User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "string username",
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetCapturesList.GetCapturesListOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
             "post": {
                 "description": "Gets a list of mushrooms to add as captures to the user journal",
                 "consumes": [
@@ -118,6 +288,13 @@ const docTemplate = `{
                 ],
                 "summary": "Add a new list of captures to the user",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "info to add and update the capture with. Will NOT overwrite notes if notes already exist. Instances will append",
                         "name": "request",
@@ -138,7 +315,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/:UserID/captures/:CaptureID": {
+        "/users/{UserID}/captures/{CaptureID}": {
             "get": {
                 "description": "Gets all relevant information about a mushroom that's been captured for a user",
                 "consumes": [
@@ -151,6 +328,22 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Get information about a captured mushroom",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "the capture ID",
+                        "name": "CaptureID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "mushroom information",
@@ -209,6 +402,44 @@ const docTemplate = `{
                 }
             }
         },
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "TotalCaptures": {
+                    "type": "integer"
+                },
+                "color1": {
+                    "type": "string"
+                },
+                "color2": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "follows": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "routes.AddCaptures.AddCapturesInputStruct": {
             "type": "object",
             "properties": {
@@ -239,6 +470,25 @@ const docTemplate = `{
             "properties": {
                 "capture": {
                     "$ref": "#/definitions/models.Capture"
+                }
+            }
+        },
+        "routes.GetCapturesList.GetCapturesListOutputStruct": {
+            "type": "object",
+            "properties": {
+                "captures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Capture"
+                    }
+                }
+            }
+        },
+        "routes.GetUser.GetUserOutputStruct": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },
@@ -278,6 +528,17 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "routes.SearchUser.SearchUsersOutputStruct": {
+            "type": "object",
+            "properties": {
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.User"
+                    }
                 }
             }
         }

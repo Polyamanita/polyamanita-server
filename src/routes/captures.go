@@ -12,7 +12,58 @@ import (
 	"github.com/polyamanita/polyamanita-server/src/models"
 )
 
-func (c *Controller) GetCapturesList(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
+// GetCapturesList godoc
+//
+//	@Summary		Gets a list of captures from a User
+//	@Description	Gets a list of captures from a User with input data from DDB
+//	@Tags			Captures
+//	@Accept			json
+//	@Produce		json
+//	@Param			UserID	path		string												true	"the user ID"
+//	@success		200		{object}	routes.GetCapturesList.GetCapturesListOutputStruct	"string username"
+//	@Failure		500
+//	@Router			/users/{UserID}/captures [get]
+func (c *Controller) GetCapturesList(ctx *gin.Context) {
+	userID := ctx.Param("UserID")
+
+	//build expression to query table
+	partKey := e.Key("UserID").Equal(e.Value(userID))
+	sortKey := e.Key("MainSort").BeginsWith("Capture#")
+	projection := e.NamesList(e.Name("CaptureID"), e.Name("TimesFound"))
+	expr, err := e.NewBuilder().
+		WithKeyCondition(e.KeyAnd(partKey, sortKey)).
+		WithProjection(projection).
+		Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	}
+
+	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		KeyConditionExpression:    expr.KeyCondition(),
+		ProjectionExpression:      expr.Projection(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	type GetCapturesListOutputStruct struct {
+		Captures []*models.Capture `json:"captures"`
+	}
+	resp := &GetCapturesListOutputStruct{}
+	if err := dynamodbattribute.UnmarshalListOfMaps(queryResp.Items, &resp.Captures); err != nil {
+		c.l.Error("couldn't unmarshal query resp: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
 
 // AddCaptures godoc
 //	@Summary		Add a new list of captures to the user
@@ -20,10 +71,11 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) { ctx.Status(http.StatusN
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
+//	@Param			UserID	path	string										true	"the user ID"
 //	@Param			request	body	routes.AddCaptures.AddCapturesInputStruct	true	"info to add and update the capture with. Will NOT overwrite notes if notes already exist. Instances will append"
 //	@Failure		400
 //	@Failure		401
-//	@Router			/users/:UserID/captures [post]
+//	@Router			/users/{UserID}/captures [post]
 func (c *Controller) AddCaptures(ctx *gin.Context) {
 	type AddCapturesInputStruct struct {
 		Captures []*struct {
@@ -68,6 +120,26 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 		}); err != nil {
 			c.l.Error("unable to updateitem: ", err)
 		}
+
+		// Update stats
+		expr, err = e.NewBuilder().
+			WithUpdate(e.Add(e.Name("TotalCaptures"), e.Value(len(capture.Instances)))).
+			Build()
+		if err != nil {
+			c.l.Error("unable to build expression: ", err)
+		}
+		if _, err := c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+			TableName: aws.String(c.secrets.ddbUserbaseTable),
+			Key: map[string]*dynamodb.AttributeValue{
+				"UserID":   {S: aws.String(userID)},
+				"MainSort": {S: aws.String("Metadata")},
+			},
+			UpdateExpression:          expr.Update(),
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+		}); err != nil {
+			c.l.Error("unable to updateitem: ", err)
+		}
 	}
 
 	ctx.Status(http.StatusOK)
@@ -81,9 +153,11 @@ func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNo
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	routes.GetCapture.GetCaptureOutputStruct	"mushroom information"
+//	@Param			UserID		path		string										true	"the user ID"
+//	@Param			CaptureID	path		string										true	"the capture ID"
+//	@Success		200			{object}	routes.GetCapture.GetCaptureOutputStruct	"mushroom information"
 //	@Failure		500
-//	@Router			/users/:UserID/captures/:CaptureID [get]
+//	@Router			/users/{UserID}/captures/{CaptureID} [get]
 func (c *Controller) GetCapture(ctx *gin.Context) {
 	userID := ctx.Param("UserID")
 	captureID := ctx.Param("CaptureID")

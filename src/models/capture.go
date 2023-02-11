@@ -3,12 +3,12 @@ package models
 import "time"
 
 type Capture struct {
-	UserID    string `json:"userID" dynamodbav:"UserID"`
-	CaptureID string `json:"captureID" dynamodbav:"CaptureID"`
+	UserID    string `json:"userID,omitempty" dynamodbav:"UserID"`
+	CaptureID string `json:"captureID,omitempty" dynamodbav:"CaptureID"`
 
 	TimesFound int64       `json:"timesFound" dynamodbav:"TimesFound"`
-	Notes      string      `json:"notes" dynamodbav:"Notes"`
-	Instances  []*Instance `json:"instances" dynamodbav:"Instances"`
+	Notes      string      `json:"notes,omitempty" dynamodbav:"Notes"`
+	Instances  []*Instance `json:"instances,omitempty" dynamodbav:"Instances"`
 }
 
 type Instance struct {

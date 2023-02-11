@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -133,7 +134,7 @@ func TestAddCaptures(t *testing.T) {
 	assert.Equal(t,
 		map[string]*dynamodb.AttributeValue{
 			"UserID":   {S: aws.String("some-user-id")},
-			"MainSort": {S: aws.String(fmt.Sprintf("Capture#%s#%s", "some-user-id", "some-capture-id"))},
+			"MainSort": {S: aws.String("Metadata")},
 		},
 		dynamoMock.UpdateItemCall.Receives.UpdateItemInput.Key,
 	)
@@ -141,4 +142,61 @@ func TestAddCaptures(t *testing.T) {
 	assert.Equal(t, aws.String("some-userbase-table"), dynamoMock.UpdateItemCall.Receives.UpdateItemInput.TableName)
 
 	assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+}
+
+func TestGetCapturesList(t *testing.T) {
+	t.Run("when the call is successful", func(t *testing.T) {
+		wantCapture := &[]models.Capture{{
+			CaptureID:  "some-capture-id",
+			UserID:     "some-user-id",
+			TimesFound: 10,
+			Notes:      "some notes",
+			Instances: []*models.Instance{
+				{
+					Longitude: 101,
+					Latitude:  102,
+					Location:  "Forest",
+					DateFound: time.Date(2022, 2, 22, 22, 22, 22, 22, time.UTC),
+				},
+			},
+		}}
+
+		queryOutputItems, err := dynamodbattribute.MarshalMap(wantCapture)
+		assert.NoError(t, err)
+		dynamoMock := &fakes.DynamoDBAPI{}
+		dynamoMock.QueryCall.Returns.QueryOutput = &dynamodb.QueryOutput{
+			Count: aws.Int64(1),
+			Items: []map[string]*dynamodb.AttributeValue{
+				queryOutputItems,
+			},
+		}
+
+		c := routes.NewTestController(nil, dynamoMock, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodGet,
+			"/users/some-id/captures",
+			nil,
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+		ctx.Params = gin.Params{{Key: "UserID", Value: "some-id"}}
+
+		// Make call
+		c.GetCapturesList(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		gotResp, err := ioutil.ReadAll(w.Body)
+		assert.NoError(t, err)
+		assert.NotNil(t, string(gotResp))
+
+		// Validate that the call made correct function calls
+		assert.Equal(t, "some-userbase-table",
+			*dynamoMock.QueryCall.Receives.QueryInput.TableName)
+
+	})
 }
