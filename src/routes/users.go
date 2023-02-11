@@ -294,20 +294,20 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			UserID	path	string								true	"the user ID"
-//	@Param			request	body	routes.UpdateUser.UpdateInputStruct	true	"User data"
+//	@Param			request	body	models.User	true	"User data"
 //	@success		200
 //	@Failure		500
 //	@Router			/users/{UserID} [put]
 func (c *Controller) UpdateUser(ctx *gin.Context) {
-	//input for updating profile
 	type UpdateInputStruct struct {
-		Userid    string `json:"userid"`
-		Username  string `json:"username"`
-		Firstname string `json:"firstname"`
-		Lastname  string `json:"lastname"`
-		Password  string `json:"password"`
-		Email     string `json:"email"`
+		Username  string `json:"username" dynamodbav:"Username"`
+		Email     string `json:"email" dynamodbav:"Email"`
+		FirstName string `json:"firstName" dynamodbav:"FirstName"`
+		LastName  string `json:"lastName" dynamodbav:"LastName"`
+		Color1    string `json:"color1" dynamodbav:"Color1"`
+		Color2    string `json:"color2" dynamodbav:"Color2"`
 	}
+	userID := ctx.Param("UserID")
 
 	body := &UpdateInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
@@ -316,45 +316,76 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	//build expression to update user info only if password matches
-	conditionEx := e.Equal(e.Name("password"), e.Value(body.Password))
-
-	update := e.Set(
-		e.Name("username"),
-		e.Value(body.Username),
-	).Set(
-		e.Name("firstname"),
-		e.Value(body.Firstname),
-	).Set(
-		e.Name("lastname"),
-		e.Value(body.Lastname),
-	).Set(
-		e.Name("email"),
-		e.Value(body.Email))
-
-	expr, err := e.NewBuilder().WithUpdate(update).WithCondition(conditionEx).Build()
-
+	// check if username / email taken
+	expr, err := e.NewBuilder().
+		WithFilter(e.Name("Email").Equal(e.Value(body.Email)).
+			Or(e.Name("Username").Equal(e.Value(body.Username)))).
+		Build()
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
-	} else {
-		_, err = c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
-			TableName: aws.String(c.secrets.ddbUserbaseTable),
-			Key: map[string]*dynamodb.AttributeValue{
-				":0": {S: aws.String(body.Userid)},
-			},
-			ExpressionAttributeNames:  expr.Names(),
-			ExpressionAttributeValues: expr.Values(),
-			UpdateExpression:          expr.Update(),
-			ConditionExpression:       expr.Condition(),
-		})
-		if err != nil {
-			c.l.Error(err)
-			ctx.Status(http.StatusInternalServerError)
-			return
-		}
 	}
+	scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusUnauthorized)
+		return
+	}
+	if *scanResp.Count != 0 {
+		c.l.Error(fmt.Sprintf(`username "%v" or email "%v" already in use`, body.Email, body.Email))
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	// Update user
+	update := e.UpdateBuilder{}
+	if body.Username != "" {
+		update = update.Set(e.Name("Username"), e.Value(body.Username))
+	}
+	if body.Email != "" {
+		update = update.Set(e.Name("Email"), e.Value(body.Email))
+	}
+	if body.FirstName != "" {
+		update = update.Set(e.Name("FirstName"), e.Value(body.FirstName))
+	}
+	if body.LastName != "" {
+		update = update.Set(e.Name("LastName"), e.Value(body.LastName))
+	}
+	if body.Color1 != "" {
+		update = update.Set(e.Name("Color1"), e.Value(body.Color1))
+	}
+	if body.Color2 != "" {
+		update = update.Set(e.Name("Color2"), e.Value(body.Color2))
+	}
+	expr, err = e.NewBuilder().WithUpdate(update).Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: aws.String(c.secrets.ddbUserbaseTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"UserID":   {S: aws.String(userID)},
+			"MainSort": {S: aws.String("Metadata")},
+		},
+		UpdateExpression:          expr.Update(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
 	//return httpstatusOK
 	ctx.Status(http.StatusOK)
 }

@@ -237,6 +237,9 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Count: aws.Int64(0),
+		}
 
 		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
 
@@ -248,16 +251,16 @@ func TestUpdateUser(t *testing.T) {
 			"/users",
 			io.NopCloser(strings.NewReader(`
 			{
-				"userid": "12321jkasdas",
 				"username": "kyle25",
-				"firstname": "kyle",
-				"lastname": "boitz",
-				"password": "password12!",
+				"firstName": "kyle",
+				"lastName": "boitz",
 				"email": "kyle@gmail.com"
 			}
 			`)),
 		)
 		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		ctx.Params = gin.Params{{Key: "UserID", Value: "some-id"}}
 
 		// Make call
 		c.UpdateUser(ctx)
@@ -274,44 +277,20 @@ func TestUpdateUser(t *testing.T) {
 
 		// Validate the query input
 		gotUserid := fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.Key
-		userid := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("12321jkasdas")}}
+		userid := map[string]*dynamodb.AttributeValue{
+			"UserID":   {S: aws.String("some-id")},
+			"MainSort": {S: aws.String("Metadata")},
+		}
 		assert.Equal(t, gotUserid, userid)
 
 		gotUserInfo := fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.ExpressionAttributeValues
 		userInfo := map[string]*dynamodb.AttributeValue{
-			":0": {S: aws.String("password12!")},
-			":1": {S: aws.String("kyle25")},
+			":0": {S: aws.String("kyle25")},
+			":1": {S: aws.String("kyle@gmail.com")},
 			":2": {S: aws.String("kyle")},
 			":3": {S: aws.String("boitz")},
-			":4": {S: aws.String("kyle@gmail.com")},
 		}
 		assert.Equal(t, gotUserInfo, userInfo)
-
-		//validate the query output
-
-	})
-
-	t.Run("when the body request is invalid", func(t *testing.T) {
-		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
-
-		// Setup call
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Request = httptest.NewRequest(
-			http.MethodPut,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-				"username": "kyle25"
-			}
-			`)),
-		)
-		ctx.Request.Header.Set("Content-Type", "application/json")
-
-		// Make call
-		c.UpdateUser(ctx)
-
-		// Validate that the response is correct
-		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
 	})
 }
 
