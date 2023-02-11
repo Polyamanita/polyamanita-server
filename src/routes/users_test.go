@@ -1,6 +1,7 @@
 package routes_test
 
 import (
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/polyamanita/polyamanita-server/src/fakes"
 	"github.com/polyamanita/polyamanita-server/src/lib"
+	"github.com/polyamanita/polyamanita-server/src/models"
 	"github.com/polyamanita/polyamanita-server/src/routes"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,8 +23,17 @@ import (
 func TestSearchUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
-		fakeDynamo.QueryCall.Returns.QueryOutput = &dynamodb.QueryOutput{
-			Items: []map[string]*dynamodb.AttributeValue{{}},
+		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Count: aws.Int64(1),
+			Items: []map[string]*dynamodb.AttributeValue{
+				{
+					"UserID":        {S: aws.String("some-id")},
+					"Username":      {S: aws.String("some-username")},
+					"TotalCaptures": {N: aws.String("10")},
+					"Color1":        {S: aws.String("#123456")},
+					"Color2":        {S: aws.String("#123456")},
+				},
+			},
 		}
 
 		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
@@ -32,12 +43,8 @@ func TestSearchUser(t *testing.T) {
 		ctx, _ := gin.CreateTestContext(w)
 		ctx.Request = httptest.NewRequest(
 			http.MethodGet,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-			{
-				"username": "kyle25"
-			}
-			`)),
+			"/users?query=someuser",
+			nil,
 		)
 		ctx.Request.Header.Set("Content-Type", "application/json")
 
@@ -47,22 +54,26 @@ func TestSearchUser(t *testing.T) {
 		// Validate that the response is correct
 		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
 
-		_, err := ioutil.ReadAll(w.Body)
-		assert.NoError(t, err)
-
 		// Validate the correct table
-		gotTable := *fakeDynamo.QueryCall.Receives.QueryInput.TableName
+		gotTable := *fakeDynamo.ScanCall.Receives.ScanInput.TableName
 		assert.Equal(t, "some-userbase-table", gotTable)
 
-		// Validate the query input
-		gotUsername := fakeDynamo.QueryCall.Receives.QueryInput.ExpressionAttributeValues
-		username := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("kyle25")}}
-		assert.Equal(t, gotUsername, username)
+		type SearchUsersOutputStruct struct {
+			Users []*models.User `json:"users"`
+		}
+		resp := &SearchUsersOutputStruct{}
+		json.NewDecoder(w.Body).Decode(resp)
 
-		//validate the query output
-
+		assert.Equal(t, &SearchUsersOutputStruct{
+			Users: []*models.User{{
+				UserID:        "some-id",
+				Username:      "some-username",
+				TotalCaptures: 10,
+				Color1:        "#123456",
+				Color2:        "#123456",
+			}},
+		}, resp)
 	})
-
 }
 
 func TestRegisterUser(t *testing.T) {

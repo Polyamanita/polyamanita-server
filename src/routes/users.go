@@ -48,7 +48,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		return
 	}
 
-	queryResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
+	scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
 		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
 		FilterExpression:          expr.Filter(),
 		ProjectionExpression:      expr.Projection(),
@@ -61,7 +61,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		return
 	}
 
-	if queryResp == nil {
+	if scanResp == nil {
 		c.l.Debug("User not found: ", usernameQuery)
 		ctx.Status(http.StatusNotFound)
 		return
@@ -71,7 +71,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 		Users []*models.User `json:"users"`
 	}
 	results := SearchUsersOutputStruct{}
-	if err := dynamodbattribute.UnmarshalListOfMaps(queryResp.Items, &results.Users); err != nil {
+	if err := dynamodbattribute.UnmarshalListOfMaps(scanResp.Items, &results.Users); err != nil {
 		c.l.Error("unable to unmarshal user results: ", err)
 		ctx.Status(http.StatusInternalServerError)
 		return

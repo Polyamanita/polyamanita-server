@@ -3,6 +3,7 @@ package models
 type User struct {
 	UserID string `json:"userID,omitempty" dynamodbav:"UserID"`
 
+	Username  string `json:"username,omitempty" dynamodbav:"Username"`
 	Email     string `json:"email,omitempty" dynamodbav:"Email"`
 	FirstName string `json:"firstName,omitempty" dynamodbav:"FirstName"`
 	LastName  string `json:"lastName,omitempty" dynamodbav:"LastName"`
