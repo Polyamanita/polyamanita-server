@@ -1,6 +1,7 @@
 package routes_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -77,5 +78,67 @@ func TestGetCapture(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(gotBody)
 
 	assert.Equal(t, wantCapture, gotBody.Capture)
+	assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+}
+
+func TestAddCaptures(t *testing.T) {
+	dynamoMock := &fakes.DynamoDBAPI{}
+	cm := routes.NewTestController(nil, dynamoMock, nil, lib.NewLogger(os.Stdout))
+
+	body := &struct {
+		Captures []*struct {
+			Notes     string             `json:"notes"`
+			CaptureID string             `json:"captureID"`
+			Instances []*models.Instance `json:"instances"`
+		} `json:"captures"`
+	}{
+		Captures: []*struct {
+			Notes     string             `json:"notes"`
+			CaptureID string             `json:"captureID"`
+			Instances []*models.Instance `json:"instances"`
+		}{
+			{
+				Notes:     "some notes",
+				CaptureID: "some-capture-id",
+				Instances: []*models.Instance{
+					{
+						Longitude: 123,
+						Latitude:  456,
+						Location:  "somewhere",
+						S3Key:     "some-key",
+					},
+				},
+			},
+		},
+	}
+	b := &bytes.Buffer{}
+	json.NewEncoder(b).Encode(body)
+
+	w := httptest.NewRecorder()
+
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest(
+		http.MethodGet,
+		"/users/some-user-id/captures",
+		b,
+	)
+	ctx.Params = []gin.Param{
+		{Key: "UserID", Value: "some-user-id"},
+	}
+
+	// Make call
+	cm.AddCaptures(ctx)
+
+	// Check GetItem call
+	assert.Equal(t,
+		map[string]*dynamodb.AttributeValue{
+			"UserID":   {S: aws.String("some-user-id")},
+			"MainSort": {S: aws.String(fmt.Sprintf("Capture#%s#%s", "some-user-id", "some-capture-id"))},
+		},
+		dynamoMock.UpdateItemCall.Receives.UpdateItemInput.Key,
+	)
+
+	assert.Equal(t, aws.String("some-userbase-table"), dynamoMock.UpdateItemCall.Receives.UpdateItemInput.TableName)
+
 	assert.Equal(t, http.StatusOK, ctx.Writer.Status())
 }

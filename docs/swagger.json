@@ -95,9 +95,145 @@
                     }
                 }
             }
+        },
+        "/users/:UserID/captures": {
+            "post": {
+                "description": "Gets a list of mushrooms to add as captures to the user journal",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Add a new list of captures to the user",
+                "parameters": [
+                    {
+                        "description": "info to add and update the capture with. Will NOT overwrite notes if notes already exist. Instances will append",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddCaptures.AddCapturesInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/users/:UserID/captures/:CaptureID": {
+            "get": {
+                "description": "Gets all relevant information about a mushroom that's been captured for a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get information about a captured mushroom",
+                "responses": {
+                    "200": {
+                        "description": "mushroom information",
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetCapture.GetCaptureOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "models.Capture": {
+            "type": "object",
+            "properties": {
+                "captureID": {
+                    "type": "string"
+                },
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Instance"
+                    }
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "timesFound": {
+                    "type": "integer"
+                },
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Instance": {
+            "type": "object",
+            "properties": {
+                "dateFound": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "s3Key": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.AddCaptures.AddCapturesInputStruct": {
+            "type": "object",
+            "properties": {
+                "captures": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "captureID": {
+                                "type": "string"
+                            },
+                            "instances": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.Instance"
+                                }
+                            },
+                            "notes": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "routes.GetCapture.GetCaptureOutputStruct": {
+            "type": "object",
+            "properties": {
+                "capture": {
+                    "$ref": "#/definitions/models.Capture"
+                }
+            }
+        },
         "routes.PostAuths.AuthEmailInputStruct": {
             "type": "object",
             "properties": {

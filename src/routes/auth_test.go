@@ -93,7 +93,7 @@ func TestLogin(t *testing.T) {
 		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
 			Count: aws.Int64(1),
 			Items: []map[string]*dynamodb.AttributeValue{
-				{"id": {S: aws.String("some-id")}},
+				{"UserID": {S: aws.String("some-id")}},
 			},
 		}
 
@@ -124,13 +124,13 @@ func TestLogin(t *testing.T) {
 		assert.Equal(t, "(#0 = :0) AND (#1 = :1)", *fakeDynamo.ScanCall.Receives.ScanInput.FilterExpression)
 
 		type resp struct {
-			Id          string `json:"id"`
+			UserID      string `json:"userID"`
 			AccessToken string `json:"accessToken"`
 		}
 		gotResp := &resp{}
 		json.NewDecoder(w.Body).Decode(gotResp)
 
-		assert.Equal(t, "some-id", gotResp.Id)
+		assert.Equal(t, "some-id", gotResp.UserID)
 	})
 
 	t.Run("when the credentials don't match", func(t *testing.T) {

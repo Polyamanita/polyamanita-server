@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	e "github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/gin-gonic/gin"
 	"github.com/polyamanita/polyamanita-server/src/models"
 )
@@ -19,14 +20,57 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) { ctx.Status(http.StatusN
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		routes.AddCaptures.AddCapturesInputStruct	true	"Email address to send code to"
-//	@success		200		{object}	routes.AddCaptures.AddCapturesOutputStruct	"Expiry time of code"
-//	@Failure		500
+//	@Param			request	body	routes.AddCaptures.AddCapturesInputStruct	true	"info to add and update the capture with. Will NOT overwrite notes if notes already exist. Instances will append"
+//	@Failure		400
+//	@Failure		401
 //	@Router			/users/:UserID/captures [post]
 func (c *Controller) AddCaptures(ctx *gin.Context) {
-	type AddCapturesInputStruct struct{}
+	type AddCapturesInputStruct struct {
+		Captures []*struct {
+			Notes     string             `json:"notes"`
+			CaptureID string             `json:"captureID"`
+			Instances []*models.Instance `json:"instances"`
+		} `json:"captures"`
+	}
 
-	type AddCapturesOutputStruct struct{}
+	body := &AddCapturesInputStruct{}
+	if err := ctx.BindJSON(body); err != nil {
+		c.l.Error("couldn't bind json: ", err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	userID := ctx.Param("UserID")
+	for _, capture := range body.Captures {
+		expr, err := e.NewBuilder().
+			WithUpdate(e.Set(
+				e.Name("Instances"),
+				e.ListAppend(
+					e.IfNotExists(e.Name("Instances"), e.Value(&dynamodb.AttributeValue{L: []*dynamodb.AttributeValue{}})),
+					e.Value(capture.Instances))).
+				Add(e.Name("TimesFound"), e.Value(len(capture.Instances))).
+				Set(e.Name("CaptureID"), e.IfNotExists(e.Name("CaptureID"), e.Value(capture.CaptureID))).
+				Set(e.Name("Notes"), e.Value(capture.Notes))).
+			Build()
+		if err != nil {
+			c.l.Error("unable to build expression: ", err)
+		}
+
+		if _, err := c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+			TableName: aws.String(c.secrets.ddbUserbaseTable),
+			Key: map[string]*dynamodb.AttributeValue{
+				"UserID":   {S: aws.String(userID)},
+				"MainSort": {S: aws.String(fmt.Sprintf("Capture#%s#%s", userID, capture.CaptureID))},
+			},
+			UpdateExpression:          expr.Update(),
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+		}); err != nil {
+			c.l.Error("unable to updateitem: ", err)
+		}
+	}
+
+	ctx.Status(http.StatusOK)
 }
 
 func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
@@ -37,18 +81,18 @@ func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNo
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
-//	@success		200		{object}	routes.GetCapture.GetCaptureOutputStruct	"mushroom information"
+//	@Success		200	{object}	routes.GetCapture.GetCaptureOutputStruct	"mushroom information"
 //	@Failure		500
 //	@Router			/users/:UserID/captures/:CaptureID [get]
 func (c *Controller) GetCapture(ctx *gin.Context) {
-	UserID := ctx.Param("UserID")
-	CaptureID := ctx.Param("CaptureID")
+	userID := ctx.Param("UserID")
+	captureID := ctx.Param("CaptureID")
 
 	res, err := c.DynamoDB.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(c.secrets.ddbUserbaseTable),
 		Key: map[string]*dynamodb.AttributeValue{
-			"UserID":   {S: aws.String(UserID)},
-			"MainSort": {S: aws.String(fmt.Sprintf("Capture#%s#%s", UserID, CaptureID))},
+			"UserID":   {S: aws.String(userID)},
+			"MainSort": {S: aws.String(fmt.Sprintf("Capture#%s#%s", userID, captureID))},
 		},
 	})
 	if err != nil {
