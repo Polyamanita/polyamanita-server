@@ -119,6 +119,26 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 		}); err != nil {
 			c.l.Error("unable to updateitem: ", err)
 		}
+
+		// Update stats
+		expr, err = e.NewBuilder().
+			WithUpdate(e.Add(e.Name("TotalCaptures"), e.Value(len(capture.Instances)))).
+			Build()
+		if err != nil {
+			c.l.Error("unable to build expression: ", err)
+		}
+		if _, err := c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+			TableName: aws.String(c.secrets.ddbUserbaseTable),
+			Key: map[string]*dynamodb.AttributeValue{
+				"UserID":   {S: aws.String(userID)},
+				"MainSort": {S: aws.String("Metadata")},
+			},
+			UpdateExpression:          expr.Update(),
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+		}); err != nil {
+			c.l.Error("unable to updateitem: ", err)
+		}
 	}
 
 	ctx.Status(http.StatusOK)

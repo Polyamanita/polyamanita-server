@@ -8,9 +8,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	e "github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/polyamanita/polyamanita-server/src/models"
 )
 
 // SearchUser godoc
@@ -26,30 +28,32 @@ import (
 //	@Router			/users [get]
 func (c *Controller) SearchUser(ctx *gin.Context) {
 	//input for search query
-	type SearchInputStruct struct {
-		Username string `json:"username"`
-	}
-	body := &SearchInputStruct{}
-	if err := ctx.BindJSON(body); err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusBadRequest)
-		return
-	}
+	usernameQuery := ctx.Query("query")
 
 	//build expression to query table
-	keyEx := expression.Key("username").BeginsWith(body.Username)
-	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
+	expr, err := e.NewBuilder().
+		WithFilter(e.And(
+			e.Name("MainSort").BeginsWith("Metadata"),
+			e.Name("Username").Contains(usernameQuery))).
+		WithProjection(e.NamesList(
+			e.Name("UserID"),
+			e.Name("Username"),
+			e.Name("TotalCaptures"),
+			e.Name("Color1"),
+			e.Name("Color2"))).
+		Build()
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+	queryResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
 		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		FilterExpression:          expr.Filter(),
+		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-		KeyConditionExpression:    expr.KeyCondition(),
 	})
 	if err != nil {
 		c.l.Error(err)
@@ -58,17 +62,22 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 	}
 
 	if queryResp == nil {
-		c.l.Debug("User not found: ", body.Username)
+		c.l.Debug("User not found: ", usernameQuery)
 		ctx.Status(http.StatusNotFound)
 		return
 	}
 
-	type SearchOutputStruct struct {
-		Items string `json:"items"`
+	type SearchUsersOutputStruct struct {
+		Users []*models.User `json:"users"`
 	}
-	ctx.JSON(http.StatusOK, SearchOutputStruct{
-		Items: *queryResp.Items[0]["username"].S,
-	})
+	results := SearchUsersOutputStruct{}
+	if err := dynamodbattribute.UnmarshalListOfMaps(queryResp.Items, &results.Users); err != nil {
+		c.l.Error("unable to unmarshal user results: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, results)
 }
 
 // RegisterUser godoc
@@ -116,9 +125,9 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	// Check if email and code match
-	expr, err := expression.NewBuilder().
-		WithFilter(expression.Name("email").Equal(expression.Value(body.Email)).
-			And(expression.Name("code").Equal(expression.Value(body.Code)))).
+	expr, err := e.NewBuilder().
+		WithFilter(e.Name("email").Equal(e.Value(body.Email)).
+			And(e.Name("code").Equal(e.Value(body.Code)))).
 		Build()
 	if err != nil {
 		c.l.Error(err)
@@ -156,9 +165,9 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	// check if username / email taken
-	expr, err = expression.NewBuilder().
-		WithFilter(expression.Name("email").Equal(expression.Value(body.Email)).
-			Or(expression.Name("username").Equal(expression.Value(body.Username)))).
+	expr, err = e.NewBuilder().
+		WithFilter(e.Name("email").Equal(e.Value(body.Email)).
+			Or(e.Name("username").Equal(e.Value(body.Username)))).
 		Build()
 	if err != nil {
 		c.l.Error(err)
@@ -285,22 +294,22 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 	}
 
 	//build expression to update user info only if password matches
-	conditionEx := expression.Equal(expression.Name("password"), expression.Value(body.Password))
+	conditionEx := e.Equal(e.Name("password"), e.Value(body.Password))
 
-	update := expression.Set(
-		expression.Name("username"),
-		expression.Value(body.Username),
+	update := e.Set(
+		e.Name("username"),
+		e.Value(body.Username),
 	).Set(
-		expression.Name("firstname"),
-		expression.Value(body.Firstname),
+		e.Name("firstname"),
+		e.Value(body.Firstname),
 	).Set(
-		expression.Name("lastname"),
-		expression.Value(body.Lastname),
+		e.Name("lastname"),
+		e.Value(body.Lastname),
 	).Set(
-		expression.Name("email"),
-		expression.Value(body.Email))
+		e.Name("email"),
+		e.Value(body.Email))
 
-	expr, err := expression.NewBuilder().WithUpdate(update).WithCondition(conditionEx).Build()
+	expr, err := e.NewBuilder().WithUpdate(update).WithCondition(conditionEx).Build()
 
 	if err != nil {
 		c.l.Error(err)
