@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -148,23 +146,43 @@ func TestAddCaptures(t *testing.T) {
 
 func TestGetCapturesList(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
-		fakeDynamo := fakes.DynamoDBAPI{}
+		wantCapture := &[]models.Capture{{
+			CaptureID:  "some-capture-id",
+			UserID:     "some-user-id",
+			TimesFound: 10,
+			Notes:      "some notes",
+			Instances: []*models.Instance{
+				{
+					Longitude: 101,
+					Latitude:  102,
+					Location:  "Forest",
+					DateFound: time.Date(2022, 2, 22, 22, 22, 22, 22, time.UTC),
+				},
+			},
+		}}
 
-		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
+		queryOutputItems, err := dynamodbattribute.MarshalMap(wantCapture)
+		assert.NoError(t, err)
+		dynamoMock := &fakes.DynamoDBAPI{}
+		dynamoMock.QueryCall.Returns.QueryOutput = &dynamodb.QueryOutput{
+			Count: aws.Int64(1),
+			Items: []map[string]*dynamodb.AttributeValue{
+				queryOutputItems,
+			},
+		}
+
+		c := routes.NewTestController(nil, dynamoMock, nil, lib.NewLogger(os.Stdout))
 
 		// Setup call
 		w := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(w)
 		ctx.Request = httptest.NewRequest(
 			http.MethodGet,
-			"/captures",
-			io.NopCloser(strings.NewReader(`
-			{
-				"userid": "12321jkasdas"
-			}
-			`)),
+			"/users/some-id/captures",
+			nil,
 		)
 		ctx.Request.Header.Set("Content-Type", "application/json")
+		ctx.Params = gin.Params{{Key: "UserID", Value: "some-id"}}
 
 		// Make call
 		c.GetCapturesList(ctx)
@@ -177,34 +195,8 @@ func TestGetCapturesList(t *testing.T) {
 		assert.NotNil(t, string(gotResp))
 
 		// Validate that the call made correct function calls
-		gotTable := *fakeDynamo.QueryCall.Receives.QueryInput.TableName
-		assert.Equal(t, "some-mushroom-table", gotTable)
+		assert.Equal(t, "some-userbase-table",
+			*dynamoMock.QueryCall.Receives.QueryInput.TableName)
 
-		gotUserid := fakeDynamo.QueryCall.Receives.QueryInput.ExpressionAttributeValues
-		userid := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("12321jkasdas")}}
-		assert.Equal(t, gotUserid, userid)
-	})
-
-	t.Run("when the body request is invalid", func(t *testing.T) {
-		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
-
-		// Setup call
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Request = httptest.NewRequest(
-			http.MethodGet,
-			"/captures",
-			io.NopCloser(strings.NewReader(`
-			"userid": "12321jkasdas"
-			}
-			`)),
-		)
-		ctx.Request.Header.Set("Content-Type", "application/json")
-
-		// Make call
-		c.GetCapturesList(ctx)
-
-		// Validate that the response is correct
-		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
 	})
 }

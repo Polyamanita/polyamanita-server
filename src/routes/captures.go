@@ -22,43 +22,47 @@ import (
 //	@Param			request	body		routes.GetCapturesList.GetCapturesStruct	true	"Userid"
 //	@success		201		{object}	routes.GetUser.GetOutputStruct				"string username"
 //	@Failure		500
-//	@Router			/captures [get]
+//	@Router			/users/:UserID/captures [get]
 func (c *Controller) GetCapturesList(ctx *gin.Context) {
-	//input for getting user
-	type GetCapturesStruct struct {
-		Userid string `json:"userid"`
-	}
-
-	body := &GetCapturesStruct{}
-	if err := ctx.BindJSON(body); err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusBadRequest)
-		return
-	}
+	userID := ctx.Param("UserID")
 
 	//build expression to query table
-	keyEx := e.Key("userid").Equal(e.Value(body.Userid))
-	expr, err := e.NewBuilder().WithKeyCondition(keyEx).Build()
+	partKey := e.Key("UserID").Equal(e.Value(userID))
+	sortKey := e.Key("MainSort").BeginsWith("Capture#")
+	projection := e.NamesList(e.Name("CaptureID"), e.Name("TimesFound"))
+	expr, err := e.NewBuilder().
+		WithKeyCondition(e.KeyAnd(partKey, sortKey)).
+		WithProjection(projection).
+		Build()
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 	}
 
-	response, err := c.DynamoDB.Query(&dynamodb.QueryInput{
-		//update TableName once mushroom table is added to controller (ex: c.captures.CapturedMushrooms)
-		TableName:                 aws.String("CapturedMushrooms"),
+	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		KeyConditionExpression:    expr.KeyCondition(),
+		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-		KeyConditionExpression:    expr.KeyCondition(),
 	})
-
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	type GetCapturesListOutputStruct struct {
+		Captures []*models.Capture `json:"captures"`
+	}
+	resp := &GetCapturesListOutputStruct{}
+	if err := dynamodbattribute.UnmarshalListOfMaps(queryResp.Items, &resp.Captures); err != nil {
+		c.l.Error("couldn't unmarshal query resp: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 }
 
 // AddCaptures godoc

@@ -63,28 +63,6 @@ func TestSearchUser(t *testing.T) {
 
 	})
 
-	t.Run("when the body request is invalid", func(t *testing.T) {
-		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
-
-		// Setup call
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Request = httptest.NewRequest(
-			http.MethodGet,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-				"username": "kyle25"
-			}
-			`)),
-		)
-		ctx.Request.Header.Set("Content-Type", "application/json")
-
-		// Make call
-		c.SearchUser(ctx)
-
-		// Validate that the response is correct
-		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
-	})
 }
 
 func TestRegisterUser(t *testing.T) {

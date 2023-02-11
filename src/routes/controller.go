@@ -26,7 +26,6 @@ type Controller struct {
 type Secrets struct {
 	ddbVerificationTable string
 	ddbUserbaseTable     string
-	ddbMushroomTable     string
 	s3StoreBucket        string
 	jwtKey               []byte
 	environment          string
@@ -46,11 +45,6 @@ func NewController(l *lib.Logger) (*Controller, error) {
 	ddbUserbaseTable, ok := os.LookupEnv("AWS_DDB_TABLE_USERBASE")
 	if !ok {
 		return nil, fmt.Errorf("unable to find env var AWS_DDB_TABLE_USERBASE")
-	}
-
-	ddbMushroomTable, ok := os.LookupEnv("AWS_DDB_TABLE_MUSHROOM")
-	if !ok {
-		return nil, fmt.Errorf("unable to find env var AWS_DDB_TABLE_MUSHROOM")
 	}
 
 	ddbVerificationTable, ok := os.LookupEnv("AWS_DDB_TABLE_VERIFICATIONCODES")
@@ -84,7 +78,6 @@ func NewController(l *lib.Logger) (*Controller, error) {
 			s3StoreBucket:        s3StoreTable,
 			ddbVerificationTable: ddbVerificationTable,
 			ddbUserbaseTable:     ddbUserbaseTable,
-			ddbMushroomTable:     ddbMushroomTable,
 		},
 		Mail: mailClient,
 		l:    l,
@@ -99,7 +92,6 @@ func NewTestController(S3 s3iface.S3API, DynamoDB dynamodbiface.DynamoDBAPI, Mai
 		secrets: Secrets{
 			ddbVerificationTable: "some-verification-table",
 			ddbUserbaseTable:     "some-userbase-table",
-			ddbMushroomTable:     "some-mushroom-table",
 			s3StoreBucket:        "some-s3store-bucket",
 			jwtKey:               []byte("some-key"),
 			environment:          "some-env",
