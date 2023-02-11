@@ -372,23 +372,14 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 //	@Failure		500
 //	@Router			/users/{UserID} [delete]
 func (c *Controller) DeleteUser(ctx *gin.Context) {
-	//input for deleting user
-	type DeleteInputStruct struct {
-		Userid string `json:"userid"`
-	}
+	userID := ctx.Param("UserID")
 
-	body := &DeleteInputStruct{}
-	if err := ctx.BindJSON(body); err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusBadRequest)
-		return
-	}
-
-	//search table using userid
+	// Delete UserID#Metadata
 	_, err := c.DynamoDB.DeleteItem(&dynamodb.DeleteItemInput{
 		TableName: aws.String(c.secrets.ddbUserbaseTable),
 		Key: map[string]*dynamodb.AttributeValue{
-			"userid": {S: aws.String(body.Userid)},
+			"UserID":   {S: aws.String(userID)},
+			"MainSort": {S: aws.String("Metadata")},
 		},
 	})
 	if err != nil {
@@ -397,7 +388,47 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	//return response
+	// Delete UserID#Captures
+	expr, err := e.NewBuilder().
+		WithKeyCondition(e.KeyAnd(
+			e.Key("UserID").Equal(e.Value(userID)),
+			e.Key("MainSort").BeginsWith("Capture#"),
+		)).
+		WithProjection(e.NamesList(
+			e.Name("UserID"),
+			e.Name("MainSort"),
+		)).
+		Build()
+	if err != nil {
+		c.l.Error("unable to build expression: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		KeyConditionExpression:    expr.KeyCondition(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+	if err != nil {
+		c.l.Error("unable to query user captures: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	for _, item := range queryResp.Items {
+		_, err := c.DynamoDB.DeleteItem(&dynamodb.DeleteItemInput{
+			Key: map[string]*dynamodb.AttributeValue{
+				"UserID":   item["UserID"],
+				"MainSort": item["MainSort"],
+			},
+		})
+		if err != nil {
+			c.l.Error("unable to delete item: ", err)
+		}
+	}
+	// Delete S3 pictures
+
 	ctx.Status(http.StatusOK)
 }
 

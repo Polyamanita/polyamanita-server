@@ -318,6 +318,14 @@ func TestUpdateUser(t *testing.T) {
 func TestDeleteUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.QueryCall.Returns.QueryOutput = &dynamodb.QueryOutput{
+			Items: []map[string]*dynamodb.AttributeValue{
+				{
+					"UserID":   {S: aws.String("some-id")},
+					"MainSort": {S: aws.String("Capture#some-id#some-capture-id")},
+				},
+			},
+		}
 
 		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
 
@@ -326,57 +334,19 @@ func TestDeleteUser(t *testing.T) {
 		ctx, _ := gin.CreateTestContext(w)
 		ctx.Request = httptest.NewRequest(
 			http.MethodDelete,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-			{
-				"userid": "12321jkasdas"
-			}
-			`)),
+			"/users/some-id",
+			nil,
 		)
 		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		ctx.Params = gin.Params{{Key: "UserID", Value: "some-id"}}
 
 		// Make call
 		c.DeleteUser(ctx)
 
-		// Validate that the response is correct
+		assert.Equal(t,
+			"(#0 = :0) AND (begins_with (#1, :1))",
+			*fakeDynamo.QueryCall.Receives.QueryInput.KeyConditionExpression)
 		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
-
-		_, err := ioutil.ReadAll(w.Body)
-		assert.NoError(t, err)
-
-		// Validate the correct table
-		gotTable := *fakeDynamo.DeleteItemCall.Receives.DeleteItemInput.TableName
-		assert.Equal(t, "some-userbase-table", gotTable)
-
-		// Validate the query input
-		gotUserid := *fakeDynamo.DeleteItemCall.Receives.DeleteItemInput.Key["userid"]
-		userid := dynamodb.AttributeValue{S: aws.String("12321jkasdas")}
-		assert.Equal(t, gotUserid, userid)
-
-		//validate the query output
-
-	})
-
-	t.Run("when the body request is invalid", func(t *testing.T) {
-		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
-
-		// Setup call
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Request = httptest.NewRequest(
-			http.MethodDelete,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-				"userid": "12321jkasdas"
-			}
-			`)),
-		)
-		ctx.Request.Header.Set("Content-Type", "application/json")
-
-		// Make call
-		c.DeleteUser(ctx)
-
-		// Validate that the response is correct
-		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
 	})
 }
