@@ -22,7 +22,7 @@ import (
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		routes.SearchUser.SearchInputStruct		true	"Username"
+//	@Param			query		query		string	true	"username query"
 //	@success		201		{object}	routes.SearchUser.SearchOutputStruct	"String Array of Usernames"
 //	@Failure		500
 //	@Router			/users [get]
@@ -195,6 +195,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	userID := uuid.NewString()
 	user := &models.User{
 		UserID:    userID,
+		Username:  body.Username,
 		FirstName: body.FirstName,
 		LastName:  body.LastName,
 		Email:     body.Email,
@@ -227,48 +228,62 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		routes.GetUser.GetInputStruct	true	"Userid"
-//	@success		201		{object}	routes.GetUser.GetOutputStruct	"string username"
+//	@Param			UserID		path		string	true	"the user ID"
+//	@success		201		{object}	routes.GetUser.GetUserOutputStruct	"string username"
 //	@Failure		500
-//	@Router			/users [get]
+//	@Router			/users/{UserID} [get]
 func (c *Controller) GetUser(ctx *gin.Context) {
-	//input for getting user
-	type GetInputStruct struct {
-		Userid string `json:"userid"`
-	}
+	userID := ctx.Param("UserID")
 
-	body := &GetInputStruct{}
-	if err := ctx.BindJSON(body); err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusBadRequest)
+	expr, err := e.NewBuilder().
+		WithProjection(e.NamesList(
+			e.Name("UserID"),
+			e.Name("Username"),
+			e.Name("Email"),
+			e.Name("FirstName"),
+			e.Name("LastName"),
+			e.Name("Password"),
+			e.Name("Follows"),
+			e.Name("TotalCaptures"),
+			e.Name("Color1"),
+			e.Name("Color2"),
+		)).
+		Build()
+	if err != nil {
+		c.l.Error("couldn't build expression: ", err)
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
-
-	//search table using userid
-	response, err := c.DynamoDB.GetItem(&dynamodb.GetItemInput{
+	getItemResp, err := c.DynamoDB.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(c.secrets.ddbUserbaseTable),
 		Key: map[string]*dynamodb.AttributeValue{
-			"userid": {S: aws.String(body.Userid)},
+			"UserID":   {S: aws.String(userID)},
+			"MainSort": {S: aws.String("Metadata")},
 		},
+		ProjectionExpression:     expr.Projection(),
+		ExpressionAttributeNames: expr.Names(),
 	})
 	if err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
-
-	if response == nil {
-		c.l.Debug("User not found: ", body.Userid)
+	if len(getItemResp.Item) == 0 {
 		ctx.Status(http.StatusNotFound)
 		return
 	}
 
-	type GetOutputStruct struct {
-		Item string `json:"item"`
+	type GetUserOutputStruct struct {
+		User *models.User `json:"user"`
 	}
-	ctx.JSON(http.StatusOK, &GetOutputStruct{
-		Item: *response.Item["username"].S,
-	})
+	result := GetUserOutputStruct{}
+	if err := dynamodbattribute.UnmarshalMap(getItemResp.Item, &result.User); err != nil {
+		c.l.Error("unable to unmarshal user results: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
 }
 
 // UpdateUser godoc
@@ -278,10 +293,11 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
+//	@Param			UserID		path		string	true	"the user ID"
 //	@Param			request	body	routes.UpdateUser.UpdateInputStruct	true	"User data"
 //	@success		200
 //	@Failure		500
-//	@Router			/users [put]
+//	@Router			/users/{UserID} [put]
 func (c *Controller) UpdateUser(ctx *gin.Context) {
 	//input for updating profile
 	type UpdateInputStruct struct {
@@ -350,10 +366,11 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
+//	@Param			UserID		path		string	true	"the user ID"
 //	@Param			request	body	routes.DeleteUser.DeleteInputStruct	true	"Userid"
 //	@success		200
 //	@Failure		500
-//	@Router			/users [delete]
+//	@Router			/users/{UserID} [delete]
 func (c *Controller) DeleteUser(ctx *gin.Context) {
 	//input for deleting user
 	type DeleteInputStruct struct {

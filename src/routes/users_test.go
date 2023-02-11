@@ -143,57 +143,36 @@ func TestRegisterUser(t *testing.T) {
 		wantCode := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("kyle@gmail.com")}, ":1": {S: aws.String("kyle25")}}
 		assert.Equal(t, wantCode, gotCode)
 
-		gotUsername := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["username"].S
-		//assert.Regexp(t, regexp.MustCompile(``), gotUsername)
+		gotUsername := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["Username"].S
 		assert.Equal(t, "kyle25", gotUsername)
 
-		gotFirstname := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["firstname"].S
-		//assert.Regexp(t, regexp.MustCompile(``), gotFirstname)
+		gotFirstname := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["FirstName"].S
 		assert.Equal(t, "kyle", gotFirstname)
 
-		gotLastname := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["lastname"].S
-		//assert.Regexp(t, regexp.MustCompile(``), gotLastname)
+		gotLastname := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["LastName"].S
 		assert.Equal(t, "boitz", gotLastname)
 
-		gotPassword := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["password"].S
-		//assert.Regexp(t, regexp.MustCompile(``), gotPassword)
+		gotPassword := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["Password"].S
 		assert.Equal(t, "password12!", gotPassword)
 
-		gotEmail := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["email"].S
-		//assert.Regexp(t, regexp.MustCompile(``), gotEmail)
+		gotEmail := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["Email"].S
 		assert.Equal(t, "kyle@gmail.com", gotEmail)
 
 		//validate the query output
 
-	})
-
-	t.Run("when the body request is invalid", func(t *testing.T) {
-		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
-
-		// Setup call
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Request = httptest.NewRequest(
-			http.MethodGet,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-				"username": "kyle25"
-			}
-			`)),
-		)
-		ctx.Request.Header.Set("Content-Type", "application/json")
-
-		// Make call
-		c.SearchUser(ctx)
-
-		// Validate that the response is correct
-		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
 	})
 }
 
 func TestGetUser(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.GetItemCall.Returns.GetItemOutput = &dynamodb.GetItemOutput{
+			Item: map[string]*dynamodb.AttributeValue{
+				"UserID":   {S: aws.String("some-id")},
+				"Username": {S: aws.String("some-username")},
+				"Email":    {S: aws.String("someemail@domain.com")},
+			},
+		}
 
 		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
 
@@ -202,14 +181,12 @@ func TestGetUser(t *testing.T) {
 		ctx, _ := gin.CreateTestContext(w)
 		ctx.Request = httptest.NewRequest(
 			http.MethodGet,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-			{
-				"userid": "12321jkasdas"
-			}
-			`)),
+			"/users/some-id",
+			nil,
 		)
 		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		ctx.Params = gin.Params{{Key: "UserID", Value: "some-id"}}
 
 		// Make call
 		c.GetUser(ctx)
@@ -225,35 +202,35 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, "some-userbase-table", gotTable)
 
 		// Validate the query input
-		gotUserid := *fakeDynamo.GetItemCall.Receives.GetItemInput.Key["userid"]
-		userid := dynamodb.AttributeValue{S: aws.String("12321jkasdas")}
-		assert.Equal(t, gotUserid, userid)
-
-		//validate the query output
-
+		gotUserID := *fakeDynamo.GetItemCall.Receives.GetItemInput.Key["UserID"]
+		wantUserID := dynamodb.AttributeValue{S: aws.String("some-id")}
+		assert.Equal(t, wantUserID, gotUserID)
 	})
 
-	t.Run("when the body request is invalid", func(t *testing.T) {
-		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
+	t.Run("when the user is not found", func(t *testing.T) {
+		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.GetItemCall.Returns.GetItemOutput = &dynamodb.GetItemOutput{
+			Item: map[string]*dynamodb.AttributeValue{},
+		}
+
+		c := routes.NewTestController(nil, &fakeDynamo, nil, lib.NewLogger(os.Stdout))
 
 		// Setup call
 		w := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(w)
 		ctx.Request = httptest.NewRequest(
 			http.MethodGet,
-			"/users",
-			io.NopCloser(strings.NewReader(`
-				"userid": "12321jkasdas"
-			}
-			`)),
+			"/users/some-id",
+			nil,
 		)
 		ctx.Request.Header.Set("Content-Type", "application/json")
+		ctx.Params = gin.Params{{Key: "UserID", Value: "some-id"}}
 
 		// Make call
 		c.GetUser(ctx)
 
 		// Validate that the response is correct
-		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
+		assert.Equal(t, http.StatusNotFound, ctx.Writer.Status())
 	})
 }
 
