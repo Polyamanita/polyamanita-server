@@ -159,15 +159,15 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 	if time.Now().After(expiry) {
-		c.l.Debug(fmt.Sprintf("code expired when registerring email: %v code: %v", body.Email, body.Code))
+		c.l.Debug(fmt.Sprintf("code expired when registering email: %v code: %v", body.Email, body.Code))
 		ctx.Status(http.StatusUnauthorized)
 		return
 	}
 
 	// check if username / email taken
 	expr, err = e.NewBuilder().
-		WithFilter(e.Name("email").Equal(e.Value(body.Email)).
-			Or(e.Name("username").Equal(e.Value(body.Username)))).
+		WithFilter(e.Name("Email").Equal(e.Value(body.Email)).
+			Or(e.Name("Username").Equal(e.Value(body.Username)))).
 		Build()
 	if err != nil {
 		c.l.Error(err)
@@ -192,17 +192,24 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 
 	// put user into table
-	id := uuid.NewString()
+	userID := uuid.NewString()
+	user := &models.User{
+		UserID:    userID,
+		FirstName: body.FirstName,
+		LastName:  body.LastName,
+		Email:     body.Email,
+		Password:  body.Password,
+	}
+	item, err := dynamodbattribute.MarshalMap(user)
+	if err != nil {
+		c.l.Error("couldn't marshal user when registering: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
 	_, err = c.DynamoDB.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(c.secrets.ddbUserbaseTable),
-		Item: map[string]*dynamodb.AttributeValue{
-			"id":        {S: aws.String(id)},
-			"username":  {S: aws.String(body.Username)},
-			"firstname": {S: aws.String(body.FirstName)},
-			"lastname":  {S: aws.String(body.LastName)},
-			"password":  {S: aws.String(body.Password)},
-			"email":     {S: aws.String(body.Email)},
-		},
+		Item:      item,
 	})
 	if err != nil {
 		c.l.Error(err)
