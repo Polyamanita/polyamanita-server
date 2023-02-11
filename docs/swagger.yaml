@@ -68,11 +68,6 @@ definitions:
           type: object
         type: array
     type: object
-  routes.DeleteUser.DeleteInputStruct:
-    properties:
-      userid:
-        type: string
-    type: object
   routes.GetCapture.GetCaptureOutputStruct:
     properties:
       capture:
@@ -121,21 +116,6 @@ definitions:
         items:
           $ref: '#/definitions/models.User'
         type: array
-    type: object
-  routes.UpdateUser.UpdateInputStruct:
-    properties:
-      email:
-        type: string
-      firstname:
-        type: string
-      lastname:
-        type: string
-      password:
-        type: string
-      userid:
-        type: string
-      username:
-        type: string
     type: object
 host: <some url>
 info:
@@ -235,12 +215,6 @@ paths:
         name: UserID
         required: true
         type: string
-      - description: Userid
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/routes.DeleteUser.DeleteInputStruct'
       produces:
       - application/json
       responses:
@@ -288,7 +262,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/routes.UpdateUser.UpdateInputStruct'
+          $ref: '#/definitions/models.User'
       produces:
       - application/json
       responses:

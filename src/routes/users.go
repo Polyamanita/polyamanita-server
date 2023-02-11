@@ -293,7 +293,7 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID	path	string								true	"the user ID"
+//	@Param			UserID	path	string		true	"the user ID"
 //	@Param			request	body	models.User	true	"User data"
 //	@success		200
 //	@Failure		500
@@ -397,8 +397,7 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID	path	string								true	"the user ID"
-//	@Param			request	body	routes.DeleteUser.DeleteInputStruct	true	"Userid"
+//	@Param			UserID	path	string	true	"the user ID"
 //	@success		200
 //	@Failure		500
 //	@Router			/users/{UserID} [delete]

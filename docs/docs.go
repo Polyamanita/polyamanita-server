@@ -197,7 +197,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/routes.UpdateUser.UpdateInputStruct"
+                            "$ref": "#/definitions/models.User"
                         }
                     }
                 ],
@@ -229,15 +229,6 @@ const docTemplate = `{
                         "name": "UserID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Userid",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.DeleteUser.DeleteInputStruct"
-                        }
                     }
                 ],
                 "responses": {
@@ -474,14 +465,6 @@ const docTemplate = `{
                 }
             }
         },
-        "routes.DeleteUser.DeleteInputStruct": {
-            "type": "object",
-            "properties": {
-                "userid": {
-                    "type": "string"
-                }
-            }
-        },
         "routes.GetCapture.GetCaptureOutputStruct": {
             "type": "object",
             "properties": {
@@ -556,29 +539,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.User"
                     }
-                }
-            }
-        },
-        "routes.UpdateUser.UpdateInputStruct": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "firstname": {
-                    "type": "string"
-                },
-                "lastname": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "userid": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
                 }
             }
         }
