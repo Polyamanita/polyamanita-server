@@ -22,8 +22,8 @@ import (
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			query		query		string	true	"username query"
-//	@success		201		{object}	routes.SearchUser.SearchOutputStruct	"String Array of Usernames"
+//	@Param			query	query		string										true	"username query"
+//	@success		200		{object}	routes.SearchUser.SearchUsersOutputStruct	"String Array of Usernames"
 //	@Failure		500
 //	@Router			/users [get]
 func (c *Controller) SearchUser(ctx *gin.Context) {
@@ -228,7 +228,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID		path		string	true	"the user ID"
+//	@Param			UserID	path		string								true	"the user ID"
 //	@success		201		{object}	routes.GetUser.GetUserOutputStruct	"string username"
 //	@Failure		500
 //	@Router			/users/{UserID} [get]
@@ -293,7 +293,7 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID		path		string	true	"the user ID"
+//	@Param			UserID	path	string								true	"the user ID"
 //	@Param			request	body	routes.UpdateUser.UpdateInputStruct	true	"User data"
 //	@success		200
 //	@Failure		500
@@ -366,7 +366,7 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID		path		string	true	"the user ID"
+//	@Param			UserID	path	string								true	"the user ID"
 //	@Param			request	body	routes.DeleteUser.DeleteInputStruct	true	"Userid"
 //	@success		200
 //	@Failure		500

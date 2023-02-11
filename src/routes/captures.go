@@ -19,8 +19,8 @@ import (
 //	@Tags			Captures
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID		path		string	true	"the user ID"
-//	@success		201		{object}	routes.GetUser.GetOutputStruct				"string username"
+//	@Param			UserID	path		string												true	"the user ID"
+//	@success		200		{object}	routes.GetCapturesList.GetCapturesListOutputStruct	"string username"
 //	@Failure		500
 //	@Router			/users/{UserID}/captures [get]
 func (c *Controller) GetCapturesList(ctx *gin.Context) {
@@ -71,7 +71,7 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID		path		string	true	"the user ID"
+//	@Param			UserID	path	string										true	"the user ID"
 //	@Param			request	body	routes.AddCaptures.AddCapturesInputStruct	true	"info to add and update the capture with. Will NOT overwrite notes if notes already exist. Instances will append"
 //	@Failure		400
 //	@Failure		401
@@ -153,9 +153,9 @@ func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNo
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
-//	@Param			UserID		path		string	true	"the user ID"
-//	@Param			CaptureID		path		string	true	"the capture ID"
-//	@Success		200	{object}	routes.GetCapture.GetCaptureOutputStruct	"mushroom information"
+//	@Param			UserID		path		string										true	"the user ID"
+//	@Param			CaptureID	path		string										true	"the capture ID"
+//	@Success		200			{object}	routes.GetCapture.GetCaptureOutputStruct	"mushroom information"
 //	@Failure		500
 //	@Router			/users/{UserID}/captures/{CaptureID} [get]
 func (c *Controller) GetCapture(ctx *gin.Context) {

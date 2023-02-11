@@ -27,6 +27,31 @@ definitions:
       s3Key:
         type: string
     type: object
+  models.User:
+    properties:
+      TotalCaptures:
+        type: integer
+      color1:
+        type: string
+      color2:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      follows:
+        items:
+          type: string
+        type: array
+      lastName:
+        type: string
+      password:
+        type: string
+      userID:
+        type: string
+      username:
+        type: string
+    type: object
   routes.AddCaptures.AddCapturesInputStruct:
     properties:
       captures:
@@ -53,20 +78,17 @@ definitions:
       capture:
         $ref: '#/definitions/models.Capture'
     type: object
-  routes.GetCapturesList.GetCapturesStruct:
+  routes.GetCapturesList.GetCapturesListOutputStruct:
     properties:
-      userid:
-        type: string
+      captures:
+        items:
+          $ref: '#/definitions/models.Capture'
+        type: array
     type: object
-  routes.GetUser.GetInputStruct:
+  routes.GetUser.GetUserOutputStruct:
     properties:
-      userid:
-        type: string
-    type: object
-  routes.GetUser.GetOutputStruct:
-    properties:
-      item:
-        type: string
+      user:
+        $ref: '#/definitions/models.User'
     type: object
   routes.PostAuths.AuthEmailInputStruct:
     properties:
@@ -93,15 +115,12 @@ definitions:
       username:
         type: string
     type: object
-  routes.SearchUser.SearchInputStruct:
+  routes.SearchUser.SearchUsersOutputStruct:
     properties:
-      username:
-        type: string
-    type: object
-  routes.SearchUser.SearchOutputStruct:
-    properties:
-      items:
-        type: string
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
     type: object
   routes.UpdateUser.UpdateInputStruct:
     properties:
@@ -150,30 +169,6 @@ paths:
       summary: Send a Verification Code
       tags:
       - Auth
-  /captures:
-    get:
-      consumes:
-      - application/json
-      description: Gets a list of captures from a User with input data from DDB
-      parameters:
-      - description: Userid
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/routes.GetCapturesList.GetCapturesStruct'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: string username
-          schema:
-            $ref: '#/definitions/routes.GetUser.GetOutputStruct'
-        "500":
-          description: Internal Server Error
-      summary: Gets a list of captures from a User
-      tags:
-      - Users
   /session:
     delete:
       description: Just deletes the cookie the user was using to login
@@ -186,48 +181,26 @@ paths:
       tags:
       - Auth
   /users:
-    delete:
+    get:
       consumes:
       - application/json
-      description: Deletes a User with input data from DDB
+      description: Searchs for Users with input data from DDB
       parameters:
-      - description: Userid
-        in: body
-        name: request
+      - description: username query
+        in: query
+        name: query
         required: true
-        schema:
-          $ref: '#/definitions/routes.DeleteUser.DeleteInputStruct'
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: OK
-        "500":
-          description: Internal Server Error
-      summary: Deletes a User
-      tags:
-      - Users
-    get:
-      consumes:
-      - application/json
-      description: Gets one user with input data from DDB
-      parameters:
-      - description: Userid
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/routes.GetUser.GetInputStruct'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: string username
+          description: String Array of Usernames
           schema:
-            $ref: '#/definitions/routes.GetUser.GetOutputStruct'
+            $ref: '#/definitions/routes.SearchUser.SearchUsersOutputStruct'
         "500":
           description: Internal Server Error
-      summary: Get a User
+      summary: Searchs for a User
       tags:
       - Users
     post:
@@ -251,11 +224,65 @@ paths:
       summary: Registers a User
       tags:
       - Users
+  /users/{UserID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a User with input data from DDB
+      parameters:
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
+      - description: Userid
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.DeleteUser.DeleteInputStruct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: Deletes a User
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Gets one user with input data from DDB
+      parameters:
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: string username
+          schema:
+            $ref: '#/definitions/routes.GetUser.GetUserOutputStruct'
+        "500":
+          description: Internal Server Error
+      summary: Get a User
+      tags:
+      - Users
     put:
       consumes:
       - application/json
       description: Updates a User with input data to DDB
       parameters:
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
       - description: User data
         in: body
         name: request
@@ -272,12 +299,39 @@ paths:
       summary: Updates a User
       tags:
       - Users
-  /users/:UserID/captures:
+  /users/{UserID}/captures:
+    get:
+      consumes:
+      - application/json
+      description: Gets a list of captures from a User with input data from DDB
+      parameters:
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: string username
+          schema:
+            $ref: '#/definitions/routes.GetCapturesList.GetCapturesListOutputStruct'
+        "500":
+          description: Internal Server Error
+      summary: Gets a list of captures from a User
+      tags:
+      - Captures
     post:
       consumes:
       - application/json
       description: Gets a list of mushrooms to add as captures to the user journal
       parameters:
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
       - description: info to add and update the capture with. Will NOT overwrite notes
           if notes already exist. Instances will append
         in: body
@@ -295,12 +349,23 @@ paths:
       summary: Add a new list of captures to the user
       tags:
       - Auth
-  /users/:UserID/captures/:CaptureID:
+  /users/{UserID}/captures/{CaptureID}:
     get:
       consumes:
       - application/json
       description: Gets all relevant information about a mushroom that's been captured
         for a user
+      parameters:
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
+      - description: the capture ID
+        in: path
+        name: CaptureID
+        required: true
+        type: string
       produces:
       - application/json
       responses:
