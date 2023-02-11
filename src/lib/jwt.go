@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -22,7 +21,6 @@ func NewSignedToken(id string, key []byte, duration time.Duration) (string, erro
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(signed)
 	return signed, nil
 }
 

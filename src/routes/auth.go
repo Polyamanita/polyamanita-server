@@ -28,8 +28,8 @@ func (c *Controller) Login(ctx *gin.Context) {
 	}
 
 	expr, err := expression.NewBuilder().
-		WithFilter(expression.Name("email").Equal(expression.Value(body.Email)).
-			And(expression.Name("password").Equal(expression.Value(body.Password)))).
+		WithFilter(expression.Name("Email").Equal(expression.Value(body.Email)).
+			And(expression.Name("Password").Equal(expression.Value(body.Password)))).
 		Build()
 	if err != nil {
 		c.l.Error(err)
@@ -53,7 +53,7 @@ func (c *Controller) Login(ctx *gin.Context) {
 		return
 	}
 
-	id := *scanResp.Items[0]["id"].S
+	id := *scanResp.Items[0]["UserID"].S
 	token, err := lib.NewSignedToken(id, c.secrets.jwtKey, 24*time.Hour)
 	if err != nil {
 		c.l.Error(err)
@@ -64,11 +64,11 @@ func (c *Controller) Login(ctx *gin.Context) {
 	ctx.SetCookie("token", token, int(time.Now().Add(24*time.Hour).Unix()), "", "", true, false)
 
 	type LoginOutputStruct struct {
-		Id          string `json:"id"`
+		UserID      string `json:"userID"`
 		AccessToken string `json:"accessToken"`
 	}
 	ctx.JSON(http.StatusOK, LoginOutputStruct{
-		Id:          id,
+		UserID:      id,
 		AccessToken: token,
 	})
 }

@@ -77,7 +77,7 @@ func RunServer(port string) {
 				capturesAuth.POST("", c.AddCaptures)      // add captures
 				capturesAuth.DELETE("", c.DeleteCaptures) // delete list of captures
 
-				capture := captures.Group("/:MushroomCaptureID")
+				capture := captures.Group("/:CaptureID")
 				{
 					capture.GET("", c.GetCapture)                             // get capture details
 					capture.GET("/image/:InstanceID", c.DownloadCaptureImage) // download image

@@ -1,4 +1,53 @@
 definitions:
+  models.Capture:
+    properties:
+      captureID:
+        type: string
+      instances:
+        items:
+          $ref: '#/definitions/models.Instance'
+        type: array
+      notes:
+        type: string
+      timesFound:
+        type: integer
+      userID:
+        type: string
+    type: object
+  models.Instance:
+    properties:
+      dateFound:
+        type: string
+      latitude:
+        type: number
+      location:
+        type: string
+      longitude:
+        type: number
+      s3Key:
+        type: string
+    type: object
+  routes.AddCaptures.AddCapturesInputStruct:
+    properties:
+      captures:
+        items:
+          properties:
+            captureID:
+              type: string
+            instances:
+              items:
+                $ref: '#/definitions/models.Instance'
+              type: array
+            notes:
+              type: string
+          type: object
+        type: array
+    type: object
+  routes.GetCapture.GetCaptureOutputStruct:
+    properties:
+      capture:
+        $ref: '#/definitions/models.Capture'
+    type: object
   routes.PostAuths.AuthEmailInputStruct:
     properties:
       email:
@@ -89,4 +138,45 @@ paths:
       summary: Registers a User
       tags:
       - Users
+  /users/:UserID/captures:
+    post:
+      consumes:
+      - application/json
+      description: Gets a list of mushrooms to add as captures to the user journal
+      parameters:
+      - description: info to add and update the capture with. Will NOT overwrite notes
+          if notes already exist. Instances will append
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.AddCaptures.AddCapturesInputStruct'
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      summary: Add a new list of captures to the user
+      tags:
+      - Auth
+  /users/:UserID/captures/:CaptureID:
+    get:
+      consumes:
+      - application/json
+      description: Gets all relevant information about a mushroom that's been captured
+        for a user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: mushroom information
+          schema:
+            $ref: '#/definitions/routes.GetCapture.GetCaptureOutputStruct'
+        "500":
+          description: Internal Server Error
+      summary: Get information about a captured mushroom
+      tags:
+      - Auth
 swagger: "2.0"
