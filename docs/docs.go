@@ -54,6 +54,40 @@ const docTemplate = `{
             }
         },
         "/session": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login to an account",
+                "parameters": [
+                    {
+                        "description": "login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.Login.LoginInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "string username",
+                        "schema": {
+                            "$ref": "#/definitions/routes.Login.LoginOutputStruct"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
             "delete": {
                 "description": "Just deletes the cookie the user was using to login",
                 "tags": [

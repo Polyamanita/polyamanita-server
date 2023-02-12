@@ -173,6 +173,28 @@ paths:
       summary: Logs user out of account
       tags:
       - Auth
+    post:
+      parameters:
+      - description: login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Login.LoginInputStruct'
+      responses:
+        "200":
+          description: string username
+          schema:
+            $ref: '#/definitions/routes.Login.LoginOutputStruct'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      summary: Login to an account
+      tags:
+      - Auth
   /users:
     get:
       consumes:

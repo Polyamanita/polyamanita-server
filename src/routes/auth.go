@@ -22,7 +22,7 @@ import (
 //	@Failure	500
 //	@Failure	400
 //	@Failure	401
-//	@Router		/session [delete]
+//	@Router		/session [post]
 func (c *Controller) Login(ctx *gin.Context) {
 	// Input for registeration
 	type LoginInputStruct struct {
