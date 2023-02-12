@@ -18,6 +18,8 @@ definitions:
     properties:
       dateFound:
         type: string
+      imageLink:
+        type: string
       latitude:
         type: number
       location:
@@ -363,7 +365,7 @@ paths:
       consumes:
       - application/json
       description: Gets all relevant information about a mushroom that's been captured
-        for a user
+        for a user, including image links
       parameters:
       - description: the user ID
         in: path

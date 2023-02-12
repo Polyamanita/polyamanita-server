@@ -7,11 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gin-gonic/gin"
@@ -34,6 +36,7 @@ func TestGetCapture(t *testing.T) {
 				Latitude:  102,
 				Location:  "Forest",
 				DateFound: time.Date(2022, 2, 22, 22, 22, 22, 22, time.UTC),
+				ImageLink: "https://polyamanita-images/image",
 			},
 		},
 	}
@@ -44,7 +47,16 @@ func TestGetCapture(t *testing.T) {
 		Item: GetItemOutput.M,
 	}
 
-	cm := routes.NewTestController(nil, dynamoMock, nil, lib.NewLogger(os.Stdout))
+	s3Mock := &fakes.S3API{}
+	url, _ := url.Parse("https://polyamanita-images/image")
+	s3Mock.GetObjectRequestCall.Returns.Request = &request.Request{
+		Operation: &request.Operation{},
+		HTTPRequest: &http.Request{
+			URL: url,
+		},
+	}
+
+	cm := routes.NewTestController(s3Mock, dynamoMock, nil, lib.NewLogger(os.Stdout))
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)

@@ -3,11 +3,13 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	e "github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/polyamanita/polyamanita-server/src/models"
 )
@@ -145,11 +147,9 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
-
 // GetCapture godoc
 //	@Summary		Get information about a captured mushroom
-//	@Description	Gets all relevant information about a mushroom that's been captured for a user
+//	@Description	Gets all relevant information about a mushroom that's been captured for a user, including image links
 //	@Tags			Captures
 //	@Accept			json
 //	@Produce		json
@@ -180,13 +180,29 @@ func (c *Controller) GetCapture(ctx *gin.Context) {
 	type GetCaptureOutputStruct struct {
 		Capture *models.Capture `json:"capture"`
 	}
-	response := GetCaptureOutputStruct{}
-	if err := dynamodbattribute.UnmarshalMap(res.Item, &response.Capture); err != nil {
+	capture := GetCaptureOutputStruct{}
+	if err := dynamodbattribute.UnmarshalMap(res.Item, &capture.Capture); err != nil {
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	for _, instance := range capture.Capture.Instances {
+		req, _ := c.S3.GetObjectRequest(&s3.GetObjectInput{
+			Bucket: aws.String(c.secrets.s3StoreBucket),
+			Key:    aws.String(instance.S3Key),
+		})
+
+		url, err := req.Presign(1 * time.Hour)
+		if err != nil {
+			c.l.Error("couldn't presign GetObjectRequest for key "+instance.S3Key+": ", err)
+		}
+
+		instance.ImageLink = url
+	}
+
+	ctx.JSON(http.StatusOK, capture)
 }
+
+func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
 
 func (c *Controller) DownloadCaptureImage(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }

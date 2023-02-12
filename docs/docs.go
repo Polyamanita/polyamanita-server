@@ -351,7 +351,7 @@ const docTemplate = `{
         },
         "/users/{UserID}/captures/{CaptureID}": {
             "get": {
-                "description": "Gets all relevant information about a mushroom that's been captured for a user",
+                "description": "Gets all relevant information about a mushroom that's been captured for a user, including image links",
                 "consumes": [
                     "application/json"
                 ],
@@ -420,6 +420,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "dateFound": {
+                    "type": "string"
+                },
+                "imageLink": {
                     "type": "string"
                 },
                 "latitude": {
