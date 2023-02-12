@@ -14,6 +14,15 @@ import (
 	"github.com/polyamanita/polyamanita-server/src/lib"
 )
 
+// Login godoc
+//	@Summary	Login to an account
+//	@Tags		Auth
+//	@Param		request	body		routes.Login.LoginInputStruct	true	"login credentials"
+//	@success	200		{object}	routes.Login.LoginOutputStruct	"string username"
+//	@Failure	500
+//	@Failure	400
+//	@Failure	401
+//	@Router		/session [delete]
 func (c *Controller) Login(ctx *gin.Context) {
 	// Input for registeration
 	type LoginInputStruct struct {

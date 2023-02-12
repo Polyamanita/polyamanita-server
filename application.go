@@ -18,7 +18,6 @@ import (
 //	@title			Polyamanita API
 //	@version		1.0
 //	@description	API for Polyamanita server functions
-//	@host			<some url>
 func main() {
 	godotenv.Load()
 

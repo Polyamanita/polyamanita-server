@@ -284,7 +284,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Captures"
                 ],
                 "summary": "Add a new list of captures to the user",
                 "parameters": [
@@ -325,7 +325,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Captures"
                 ],
                 "summary": "Get information about a captured mushroom",
                 "parameters": [
@@ -492,6 +492,28 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.Login.LoginInputStruct": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.Login.LoginOutputStruct": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
         "routes.PostAuths.AuthEmailInputStruct": {
             "type": "object",
             "properties": {
@@ -548,7 +570,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "<some url>",
+	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Polyamanita API",

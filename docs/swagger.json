@@ -6,7 +6,6 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "\u003csome url\u003e",
     "paths": {
         "/auths": {
             "post": {
@@ -276,7 +275,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Captures"
                 ],
                 "summary": "Add a new list of captures to the user",
                 "parameters": [
@@ -317,7 +316,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Captures"
                 ],
                 "summary": "Get information about a captured mushroom",
                 "parameters": [
@@ -481,6 +480,28 @@
             "properties": {
                 "user": {
                     "$ref": "#/definitions/models.User"
+                }
+            }
+        },
+        "routes.Login.LoginInputStruct": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.Login.LoginOutputStruct": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
                 }
             }
         },

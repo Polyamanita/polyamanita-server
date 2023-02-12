@@ -85,6 +85,20 @@ definitions:
       user:
         $ref: '#/definitions/models.User'
     type: object
+  routes.Login.LoginInputStruct:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  routes.Login.LoginOutputStruct:
+    properties:
+      accessToken:
+        type: string
+      userID:
+        type: string
+    type: object
   routes.PostAuths.AuthEmailInputStruct:
     properties:
       email:
@@ -117,7 +131,6 @@ definitions:
           $ref: '#/definitions/models.User'
         type: array
     type: object
-host: <some url>
 info:
   contact: {}
   description: API for Polyamanita server functions
@@ -322,7 +335,7 @@ paths:
           description: Unauthorized
       summary: Add a new list of captures to the user
       tags:
-      - Auth
+      - Captures
   /users/{UserID}/captures/{CaptureID}:
     get:
       consumes:
@@ -351,5 +364,5 @@ paths:
           description: Internal Server Error
       summary: Get information about a captured mushroom
       tags:
-      - Auth
+      - Captures
 swagger: "2.0"

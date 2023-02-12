@@ -68,7 +68,7 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 // AddCaptures godoc
 //	@Summary		Add a new list of captures to the user
 //	@Description	Gets a list of mushrooms to add as captures to the user journal
-//	@Tags			Auth
+//	@Tags			Captures
 //	@Accept			json
 //	@Produce		json
 //	@Param			UserID	path	string										true	"the user ID"
@@ -150,7 +150,7 @@ func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNo
 // GetCapture godoc
 //	@Summary		Get information about a captured mushroom
 //	@Description	Gets all relevant information about a mushroom that's been captured for a user
-//	@Tags			Auth
+//	@Tags			Captures
 //	@Accept			json
 //	@Produce		json
 //	@Param			UserID		path		string										true	"the user ID"
