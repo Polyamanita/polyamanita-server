@@ -64,22 +64,22 @@ func RunServer(port string) {
 		userAuth := users.Group("/:UserID")
 		userAuth.Use(c.AuthorizeUser()) // check logged in ID == UserID
 		{
-			userAuth.PUT("", c.UpdateUser)             // update user info
-			userAuth.DELETE("", c.DeleteUser)          // delete user
-			user.GET("/followers", c.GetUserFollowers) // get user followers
-			user.GET("/feed", c.GetUserFeed)           // get follows feed
+			userAuth.PUT("", c.UpdateUser)                 // update user info
+			userAuth.DELETE("", c.DeleteUser)              // delete user
+			userAuth.POST("/images", c.UploadCaptureImage) // upload any image (usually captures)
+			
+			user.GET("/followers", c.GetUserFollowers)     // get user followers
+			user.GET("/feed", c.GetUserFeed)               // get follows feed
 
 			captures := user.Group("/captures")
 			capturesAuth := userAuth.Group("/captures")
 			{
-				captures.GET("", c.GetCapturesList)       // get list of captures
-				capturesAuth.POST("", c.AddCaptures)      // add captures
-				capturesAuth.DELETE("", c.DeleteCaptures) // delete list of captures
+				captures.GET("", c.GetCapturesList)  // get list of captures
+				capturesAuth.POST("", c.AddCaptures) // add captures
 
 				capture := captures.Group("/:CaptureID")
 				{
-					capture.GET("", c.GetCapture)                             // get capture details
-					capture.GET("/image/:InstanceID", c.DownloadCaptureImage) // download image
+					capture.GET("", c.GetCapture) // get capture details
 				}
 			}
 

@@ -461,7 +461,3 @@ func (c *Controller) DeleteUser(ctx *gin.Context) {
 
 	ctx.Status(http.StatusOK)
 }
-
-func (c *Controller) GetUserFollowers(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
-
-func (c *Controller) GetUserFeed(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
