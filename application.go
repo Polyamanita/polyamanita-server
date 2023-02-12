@@ -62,8 +62,8 @@ func RunServer(port string) {
 
 		user := users.Group("/:UserID")
 		userAuth := users.Group("/:UserID")
-		userAuth.Use(c.AuthorizeUser()) // check logged in ID == UserID
 		{
+			userAuth.Use(c.AuthorizeUser())                // check logged in ID == UserID
 			userAuth.PUT("", c.UpdateUser)                 // update user info
 			userAuth.DELETE("", c.DeleteUser)              // delete user
 			userAuth.POST("/images", c.UploadCaptureImage) // upload any image (usually captures)
