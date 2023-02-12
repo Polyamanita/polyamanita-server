@@ -67,9 +67,9 @@ func RunServer(port string) {
 			userAuth.PUT("", c.UpdateUser)                 // update user info
 			userAuth.DELETE("", c.DeleteUser)              // delete user
 			userAuth.POST("/images", c.UploadCaptureImage) // upload any image (usually captures)
-			
-			user.GET("/followers", c.GetUserFollowers)     // get user followers
-			user.GET("/feed", c.GetUserFeed)               // get follows feed
+
+			user.GET("/followers", c.GetUserFollowers) // get user followers
+			user.GET("/feed", c.GetUserFeed)           // get follows feed
 
 			captures := user.Group("/captures")
 			capturesAuth := userAuth.Group("/captures")
