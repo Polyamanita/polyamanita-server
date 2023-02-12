@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,6 +12,7 @@ import (
 	e "github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/polyamanita/polyamanita-server/src/models"
 )
 
@@ -65,6 +67,63 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, resp)
+}
+
+// UploadCaptureImage godoc
+//	@Summary		Uploads an image for the user to S3, FOR CAPTURE UPLOAD
+//	@Description	USED FOR CAPTURE UPLOAD. MAKE REQUEST HERE TO GET S3 KEY, THEN INCLUDE S3KEY IN ADDCAPTURES REQUEST
+//	@Tags			Captures
+//	@Accept			json
+//	@Produce		json
+//	@Param			numLinks	query	number	false	"number of image upload links / S3 keys to generate. Default is 1"
+//	@Param			UserID		path	string	true	"the user ID"
+//	@Failure		400
+//	@Failure		401
+//	@Router			/users/{UserID}/images [post]
+func (c *Controller) UploadCaptureImage(ctx *gin.Context) {
+	numLinksQuery, ok := ctx.GetQuery("numLinks")
+	if !ok {
+		numLinksQuery = "1"
+	}
+	numLinks, err := strconv.Atoi(numLinksQuery)
+	if err != nil {
+		c.l.Error("invalid query for numLinks: ", err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	userID := ctx.Param("UserID")
+
+	type Link struct {
+		UploadLink string `json:"uploadLink"`
+		S3Key      string `json:"s3Key"`
+	}
+	type UploadCaptureImageOutputStruct struct {
+		Links []*Link `json:"links"`
+	}
+	links := &UploadCaptureImageOutputStruct{
+		Links: make([]*Link, numLinks),
+	}
+	for i := 0; i < numLinks; i++ {
+		key := fmt.Sprintf("%s/%s", userID, uuid.NewString())
+
+		req, _ := c.S3.PutObjectRequest(&s3.PutObjectInput{
+			Bucket: aws.String(c.secrets.s3StoreBucket),
+			Key:    aws.String(key),
+		})
+
+		url, err := req.Presign(24 * time.Hour)
+		if err != nil {
+			c.l.Error("couldn't presign PutObjectRequest for key "+key+": ", err)
+		}
+
+		links.Links[i] = &Link{
+			S3Key:      key,
+			UploadLink: url,
+		}
+	}
+
+	ctx.JSON(http.StatusOK, links)
 }
 
 // AddCaptures godoc
@@ -202,7 +261,3 @@ func (c *Controller) GetCapture(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, capture)
 }
-
-func (c *Controller) DeleteCaptures(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }
-
-func (c *Controller) DownloadCaptureImage(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }

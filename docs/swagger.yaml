@@ -389,4 +389,31 @@ paths:
       summary: Get information about a captured mushroom
       tags:
       - Captures
+  /users/{UserID}/images:
+    post:
+      consumes:
+      - application/json
+      description: USED FOR CAPTURE UPLOAD. MAKE REQUEST HERE TO GET S3 KEY, THEN
+        INCLUDE S3KEY IN ADDCAPTURES REQUEST
+      parameters:
+      - description: number of image upload links / S3 keys to generate. Default is
+          1
+        in: query
+        name: numLinks
+        type: number
+      - description: the user ID
+        in: path
+        name: UserID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      summary: Uploads an image for the user to S3, FOR CAPTURE UPLOAD
+      tags:
+      - Captures
 swagger: "2.0"

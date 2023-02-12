@@ -212,3 +212,93 @@ func TestGetCapturesList(t *testing.T) {
 
 	})
 }
+
+func TestUploadCaptureImage(t *testing.T) {
+	t.Run("when the call is successful", func(t *testing.T) {
+		s3Mock := &fakes.S3API{}
+		url, _ := url.Parse("https://polyamanita-images/some-image-upload-url")
+		s3Mock.PutObjectRequestCall.Returns.Request = &request.Request{
+			Operation: &request.Operation{},
+			HTTPRequest: &http.Request{
+				URL: url,
+			},
+		}
+
+		cm := routes.NewTestController(s3Mock, nil, nil, lib.NewLogger(os.Stdout))
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodPost,
+			"/users/some-user-id/captures/images?numLinks=2",
+			nil,
+		)
+		ctx.Params = []gin.Param{
+			{Key: "UserID", Value: "some-user-id"},
+		}
+
+		// Make call
+		cm.UploadCaptureImage(ctx)
+
+		// Check body response
+		type Link struct {
+			UploadLink string `json:"uploadLink"`
+			S3Key      string `json:"s3Key"`
+		}
+		type UploadCaptureImageOutputStruct struct {
+			Links []*Link `json:"links"`
+		}
+		gotBody := &UploadCaptureImageOutputStruct{}
+		json.NewDecoder(w.Body).Decode(gotBody)
+
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		assert.Len(t, gotBody.Links, 2)
+		assert.Equal(t, "https://polyamanita-images/some-image-upload-url", gotBody.Links[0].UploadLink)
+		assert.Contains(t, gotBody.Links[0].S3Key, "some-user-id")
+		assert.NotEmpty(t, gotBody.Links[1].S3Key)
+	})
+	t.Run("when the numLinks is unspecified", func(t *testing.T) {
+		s3Mock := &fakes.S3API{}
+		url, _ := url.Parse("https://polyamanita-images/some-image-upload-url")
+		s3Mock.PutObjectRequestCall.Returns.Request = &request.Request{
+			Operation: &request.Operation{},
+			HTTPRequest: &http.Request{
+				URL: url,
+			},
+		}
+
+		cm := routes.NewTestController(s3Mock, nil, nil, lib.NewLogger(os.Stdout))
+
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodPost,
+			"/users/some-user-id/captures/images",
+			nil,
+		)
+		ctx.Params = []gin.Param{
+			{Key: "UserID", Value: "some-user-id"},
+		}
+
+		// Make call
+		cm.UploadCaptureImage(ctx)
+
+		// Check body response
+		type Link struct {
+			UploadLink string `json:"uploadLink"`
+			S3Key      string `json:"s3Key"`
+		}
+		type UploadCaptureImageOutputStruct struct {
+			Links []*Link `json:"links"`
+		}
+		gotBody := &UploadCaptureImageOutputStruct{}
+		json.NewDecoder(w.Body).Decode(gotBody)
+
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+
+		assert.Len(t, gotBody.Links, 1)
+		assert.Equal(t, "https://polyamanita-images/some-image-upload-url", gotBody.Links[0].UploadLink)
+		assert.Contains(t, gotBody.Links[0].S3Key, "some-user-id/")
+	})
+}

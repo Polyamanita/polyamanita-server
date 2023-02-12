@@ -17,5 +17,5 @@ type Instance struct {
 	Location  string    `json:"location" dynamodbav:"Location"`
 	DateFound time.Time `json:"dateFound" dynamodbav:"DateFound"`
 	S3Key     string    `json:"s3Key" dynamodbav:"S3Key"`
-	ImageLink string `json:"imageLink,omitempty"`
+	ImageLink string    `json:"imageLink,omitempty" dynamodbav:"-"`
 }

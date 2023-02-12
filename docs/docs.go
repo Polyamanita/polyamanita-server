@@ -390,6 +390,44 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{UserID}/images": {
+            "post": {
+                "description": "USED FOR CAPTURE UPLOAD. MAKE REQUEST HERE TO GET S3 KEY, THEN INCLUDE S3KEY IN ADDCAPTURES REQUEST",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Captures"
+                ],
+                "summary": "Uploads an image for the user to S3, FOR CAPTURE UPLOAD",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "number of image upload links / S3 keys to generate. Default is 1",
+                        "name": "numLinks",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "the user ID",
+                        "name": "UserID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
         }
     },
     "definitions": {
