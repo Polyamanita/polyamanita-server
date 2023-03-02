@@ -15,9 +15,9 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-//	@title			Polyamanita API
-//	@version		1.0
-//	@description	API for Polyamanita server functions
+// @title			Polyamanita API
+// @version		1.0
+// @description	API for Polyamanita server functions
 func main() {
 	godotenv.Load()
 
@@ -58,8 +58,9 @@ func RunServer(port string) {
 	users := r.Group("/users")
 	users.Use(c.AuthenticateUser()) // check user is logged in
 	{
-		users.GET("", c.SearchUser)      // search for a user
-		users.GET("/:UserID", c.GetUser) // get user
+		users.GET("", c.SearchUser)              // search for a user
+		users.GET("/captures", c.GetAllCaptures) // get captures from all users
+		users.GET("/:UserID", c.GetUser)         // get user
 
 		user := users.Group("/:UserID")
 		userAuth := users.Group("/:UserID")
@@ -73,6 +74,7 @@ func RunServer(port string) {
 			user.GET("/feed", c.GetUserFeed)           // get follows feed
 
 			captures := user.Group("/captures")
+
 			capturesAuth := userAuth.Group("/captures")
 			{
 				captures.GET("", c.GetCapturesList)  // get list of captures

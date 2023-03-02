@@ -207,6 +207,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/captures": {
+            "get": {
+                "description": "Gets all captures from DDB",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Captures"
+                ],
+                "summary": "Gets captures from all Users",
+                "responses": {
+                    "201": {
+                        "description": "List of all mushrooms",
+                        "schema": {
+                            "$ref": "#/definitions/routes.GetAllCaptures.GetAllCapturesOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/users/{UserID}": {
             "get": {
                 "description": "Gets one user with input data from DDB",
@@ -572,6 +598,17 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    }
+                }
+            }
+        },
+        "routes.GetAllCaptures.GetAllCapturesOutputStruct": {
+            "type": "object",
+            "properties": {
+                "capture": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Capture"
                     }
                 }
             }

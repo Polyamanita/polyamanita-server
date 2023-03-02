@@ -69,7 +69,72 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
+// GetAllCaptures godoc
+//
+//	@Summary		Gets captures from all Users
+//	@Description	Gets all captures from DDB
+//	@Tags			Captures
+//	@Accept			json
+//	@Produce		json
+//	@success		201	{object}	routes.GetAllCaptures.GetAllCapturesOutputStruct	"List of all mushrooms"
+//	@Failure		500
+//	@Router			/users/captures [get]
+func (c *Controller) GetAllCaptures(ctx *gin.Context) {
+
+	//build expression to query table
+	filter := e.Name("CaptureID").AttributeExists()
+	expr, err := e.NewBuilder().
+		WithFilter(filter).
+		Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	}
+
+	scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	type GetAllCapturesOutputStruct struct {
+		Captures []*models.Capture `json:"capture"`
+	}
+
+	resp := &GetAllCapturesOutputStruct{}
+	if err := dynamodbattribute.UnmarshalListOfMaps(scanResp.Items, &resp.Captures); err != nil {
+		c.l.Error("couldn't unmarshal query resp: ", err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	for _, capture := range resp.Captures {
+		for _, instance := range capture.Instances {
+			req, _ := c.S3.GetObjectRequest(&s3.GetObjectInput{
+				Bucket: aws.String(c.secrets.s3StoreBucket),
+				Key:    aws.String(instance.S3Key),
+			})
+
+			url, err := req.Presign(1 * time.Hour)
+			if err != nil {
+				c.l.Error("couldn't presign GetObjectRequest for key "+instance.S3Key+": ", err)
+			}
+
+			instance.ImageLink = url
+		}
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
 // UploadCaptureImage godoc
+//
 //	@Summary		Uploads an image for the user to S3, FOR CAPTURE UPLOAD
 //	@Description	USED FOR CAPTURE UPLOAD. MAKE REQUEST HERE TO GET S3 KEY, THEN INCLUDE S3KEY IN ADDCAPTURES REQUEST
 //	@Tags			Captures
@@ -127,6 +192,7 @@ func (c *Controller) UploadCaptureImage(ctx *gin.Context) {
 }
 
 // AddCaptures godoc
+//
 //	@Summary		Add a new list of captures to the user
 //	@Description	Gets a list of mushrooms to add as captures to the user journal
 //	@Tags			Captures
@@ -207,6 +273,7 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 }
 
 // GetCapture godoc
+//
 //	@Summary		Get information about a captured mushroom
 //	@Description	Gets all relevant information about a mushroom that's been captured for a user, including image links
 //	@Tags			Captures
