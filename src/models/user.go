@@ -8,6 +8,7 @@ type User struct {
 	FirstName string `json:"firstName,omitempty" dynamodbav:"FirstName"`
 	LastName  string `json:"lastName,omitempty" dynamodbav:"LastName"`
 	Password  string `json:"password,omitempty" dynamodbav:"Password"`
+	MainSort  string `json:"mainSort,omitempty" dynamodbav:"MainSort"`
 
 	Follows       []string `json:"follows,omitempty" dynamodbav:"Follows"`
 	TotalCaptures int      `json:"TotalCaptures,omitempty" dynamodbav:"TotalCaptures"`

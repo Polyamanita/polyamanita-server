@@ -5,6 +5,7 @@ import "time"
 type Capture struct {
 	UserID    string `json:"userID,omitempty" dynamodbav:"UserID"`
 	CaptureID string `json:"captureID,omitempty" dynamodbav:"CaptureID"`
+	MainSort  string `json:"mainSort,omitempty" dynamodbav:"MainSort"`
 
 	TimesFound int64       `json:"timesFound" dynamodbav:"TimesFound"`
 	Notes      string      `json:"notes,omitempty" dynamodbav:"Notes"`

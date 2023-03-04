@@ -47,6 +47,8 @@ definitions:
         type: array
       lastName:
         type: string
+      mainSort:
+        type: string
       password:
         type: string
       userID:
