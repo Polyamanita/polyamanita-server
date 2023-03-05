@@ -132,13 +132,13 @@ func TestRegisterUser(t *testing.T) {
 
 		// Validate the correct tables
 		gotTableCode := *fakeDynamo.ScanCall.Receives.ScanInput.TableName
-		assert.Equal(t, "some-userbase-table", gotTableCode)
+		assert.Equal(t, "some-verification-table", gotTableCode)
 		gotTableUser := *fakeDynamo.PutItemCall.Receives.PutItemInput.TableName
 		assert.Equal(t, "some-userbase-table", gotTableUser)
 
 		// Validate the query input
 		gotCode := fakeDynamo.ScanCall.Receives.ScanInput.ExpressionAttributeValues
-		wantCode := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("kyle@gmail.com")}, ":1": {S: aws.String("kyle25")}}
+		wantCode := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("kyle@gmail.com")}, ":1": {S: aws.String("asdafwad12421")}}
 		assert.Equal(t, wantCode, gotCode)
 
 		gotUsername := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["Username"].S

@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	e "github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/polyamanita/polyamanita-server/src/lib"
@@ -110,11 +112,55 @@ func (c *Controller) Logout(ctx *gin.Context) {
 //	@Router			/auth [post]
 func (c *Controller) PostAuths(ctx *gin.Context) {
 	type AuthEmailInputStruct struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Username string `json:"username"`
+		Password string `json:"password"`
 	}
 	body := &AuthEmailInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
 		c.l.Error(err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	// Check password requirements are met
+	if len(body.Password) < 8 {
+		c.l.Error("invalid password of length ", len(body.Password))
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	// Matcher checks if the password is INVALID, not valid
+	ok, err := regexp.MatchString(`"^(.{0,7}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"`, body.Password)
+	if ok || err != nil {
+		c.l.Error("invalid password: ", err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	// check if username / email taken
+	expr, err := e.NewBuilder().
+		WithFilter(e.Name("Email").Equal(e.Value(body.Email)).
+			Or(e.Name("Username").Equal(e.Value(body.Username)))).
+		Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+	scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
+		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusUnauthorized)
+		return
+	}
+	if *scanResp.Count != 0 {
+		c.l.Error(fmt.Sprintf(`username "%v" or email "%v" already in use`, body.Username, body.Email))
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
