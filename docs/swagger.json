@@ -7,7 +7,7 @@
         "version": "1.0"
     },
     "paths": {
-        "/auths": {
+        "/auth": {
             "post": {
                 "description": "Sends an email to the address passed in with a verification code to verify their email",
                 "consumes": [
@@ -434,6 +434,9 @@
                         "$ref": "#/definitions/models.Instance"
                     }
                 },
+                "mainSort": {
+                    "type": "string"
+                },
                 "notes": {
                     "type": "string"
                 },
@@ -483,17 +486,11 @@
                 "email": {
                     "type": "string"
                 },
-                "firstName": {
-                    "type": "string"
-                },
                 "follows": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "lastName": {
-                    "type": "string"
                 },
                 "mainSort": {
                     "type": "string"
@@ -606,12 +603,6 @@
                     "type": "string"
                 },
                 "email": {
-                    "type": "string"
-                },
-                "firstName": {
-                    "type": "string"
-                },
-                "lastName": {
                     "type": "string"
                 },
                 "password": {
