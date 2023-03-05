@@ -26,6 +26,10 @@ import (
 //	@Failure		500
 //	@Router			/users [get]
 func (c *Controller) SearchUser(ctx *gin.Context) {
+	type ErrorOutputStruct struct {
+		Response string `json:"response"`
+	}
+
 	//input for search query
 	usernameQuery := ctx.Query("query")
 
@@ -62,7 +66,7 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 
 	if scanResp == nil {
 		c.l.Debug("User not found: ", usernameQuery)
-		ctx.Status(http.StatusNotFound)
+		ctx.JSON(http.StatusNotFound, &ErrorOutputStruct{Response: "No users found"})
 		return
 	}
 
@@ -99,6 +103,10 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		Email    string `json:"email"`
 	}
 
+	type ErrorOutputStruct struct {
+		Response string `json:"response"`
+	}
+
 	body := &RegisterInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
 		c.l.Error(err)
@@ -124,12 +132,12 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	})
 	if err != nil {
 		c.l.Error(err)
-		ctx.Status(http.StatusUnauthorized)
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 	if *scanResp.Count == 0 {
 		c.l.Error(fmt.Sprintf(`couldn't find email "%v" with code "%v"`, body.Email, body.Code))
-		ctx.Status(http.StatusUnauthorized)
+		ctx.JSON(http.StatusUnauthorized, &ErrorOutputStruct{Response: "couldn't match the email with the code entered"})
 		return
 	}
 
@@ -142,7 +150,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	}
 	if time.Now().After(expiry) {
 		c.l.Debug(fmt.Sprintf("code expired when registering email: %v code: %v", body.Email, body.Code))
-		ctx.Status(http.StatusUnauthorized)
+		ctx.JSON(http.StatusUnauthorized, &ErrorOutputStruct{Response: "code has expired, try requesting a new one"})
 		return
 	}
 
@@ -257,6 +265,10 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 		Color1   string `json:"color1" dynamodbav:"Color1"`
 		Color2   string `json:"color2" dynamodbav:"Color2"`
 	}
+	type ErrorOutputStruct struct {
+		Response string `json:"response"`
+	}
+
 	userID := ctx.Param("UserID")
 
 	body := &UpdateInputStruct{}
@@ -284,12 +296,12 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 	})
 	if err != nil {
 		c.l.Error(err)
-		ctx.Status(http.StatusUnauthorized)
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 	if *scanResp.Count != 0 {
 		c.l.Error(fmt.Sprintf(`username "%v" or email "%v" already in use`, body.Email, body.Email))
-		ctx.Status(http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, &ErrorOutputStruct{Response: "username or email already in use"})
 		return
 	}
 
@@ -346,6 +358,10 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 //	@Failure		500
 //	@Router			/users/{UserID} [delete]
 func (c *Controller) DeleteUser(ctx *gin.Context) {
+	type ErrorOutputStruct struct {
+		Response string `json:"response"`
+	}
+
 	userID := ctx.Param("UserID")
 
 	// Delete UserID#Metadata
