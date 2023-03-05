@@ -94,12 +94,10 @@ func (c *Controller) SearchUser(ctx *gin.Context) {
 func (c *Controller) RegisterUser(ctx *gin.Context) {
 	// Input for registeration
 	type RegisterInputStruct struct {
-		Code      string `json:"code"`
-		Username  string `json:"username"`
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Password  string `json:"password"`
-		Email     string `json:"email"`
+		Code     string `json:"code"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	body := &RegisterInputStruct{}
@@ -194,13 +192,11 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	// put user into table
 	userID := uuid.NewString()
 	user := &models.User{
-		UserID:    userID,
-		Username:  body.Username,
-		FirstName: body.FirstName,
-		LastName:  body.LastName,
-		Email:     body.Email,
-		Password:  body.Password,
-		MainSort:  "MetaData",
+		UserID:   userID,
+		Username: body.Username,
+		Email:    body.Email,
+		Password: body.Password,
+		MainSort: "MetaData",
 	}
 	item, err := dynamodbattribute.MarshalMap(user)
 	if err != nil {
@@ -241,8 +237,6 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 			e.Name("UserID"),
 			e.Name("Username"),
 			e.Name("Email"),
-			e.Name("FirstName"),
-			e.Name("LastName"),
 			e.Name("Password"),
 			e.Name("Follows"),
 			e.Name("TotalCaptures"),
@@ -301,12 +295,10 @@ func (c *Controller) GetUser(ctx *gin.Context) {
 //	@Router			/users/{UserID} [put]
 func (c *Controller) UpdateUser(ctx *gin.Context) {
 	type UpdateInputStruct struct {
-		Username  string `json:"username" dynamodbav:"Username"`
-		Email     string `json:"email" dynamodbav:"Email"`
-		FirstName string `json:"firstName" dynamodbav:"FirstName"`
-		LastName  string `json:"lastName" dynamodbav:"LastName"`
-		Color1    string `json:"color1" dynamodbav:"Color1"`
-		Color2    string `json:"color2" dynamodbav:"Color2"`
+		Username string `json:"username" dynamodbav:"Username"`
+		Email    string `json:"email" dynamodbav:"Email"`
+		Color1   string `json:"color1" dynamodbav:"Color1"`
+		Color2   string `json:"color2" dynamodbav:"Color2"`
 	}
 	userID := ctx.Param("UserID")
 
@@ -351,12 +343,6 @@ func (c *Controller) UpdateUser(ctx *gin.Context) {
 	}
 	if body.Email != "" {
 		update = update.Set(e.Name("Email"), e.Value(body.Email))
-	}
-	if body.FirstName != "" {
-		update = update.Set(e.Name("FirstName"), e.Value(body.FirstName))
-	}
-	if body.LastName != "" {
-		update = update.Set(e.Name("LastName"), e.Value(body.LastName))
 	}
 	if body.Color1 != "" {
 		update = update.Set(e.Name("Color1"), e.Value(body.Color1))

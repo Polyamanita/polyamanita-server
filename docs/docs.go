@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auths": {
+        "/auth": {
             "post": {
                 "description": "Sends an email to the address passed in with a verification code to verify their email",
                 "consumes": [
@@ -442,6 +442,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.Instance"
                     }
                 },
+                "mainSort": {
+                    "type": "string"
+                },
                 "notes": {
                     "type": "string"
                 },
@@ -491,17 +494,11 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstName": {
-                    "type": "string"
-                },
                 "follows": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "lastName": {
-                    "type": "string"
                 },
                 "mainSort": {
                     "type": "string"
@@ -614,12 +611,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "email": {
-                    "type": "string"
-                },
-                "firstName": {
-                    "type": "string"
-                },
-                "lastName": {
                     "type": "string"
                 },
                 "password": {

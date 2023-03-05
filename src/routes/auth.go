@@ -15,6 +15,7 @@ import (
 )
 
 // Login godoc
+//
 //	@Summary	Login to an account
 //	@Tags		Auth
 //	@Param		request	body		routes.Login.LoginInputStruct	true	"login credentials"
@@ -83,6 +84,7 @@ func (c *Controller) Login(ctx *gin.Context) {
 }
 
 // Logout godoc
+//
 //	@Summary		Logs user out of account
 //	@Description	Just deletes the cookie the user was using to login
 //	@Tags			Auth
@@ -96,6 +98,7 @@ func (c *Controller) Logout(ctx *gin.Context) {
 }
 
 // PostAuths godoc
+//
 //	@Summary		Send a Verification Code
 //	@Description	Sends an email to the address passed in with a verification code to verify their email
 //	@Tags			Auth
@@ -104,7 +107,7 @@ func (c *Controller) Logout(ctx *gin.Context) {
 //	@Param			request	body		routes.PostAuths.AuthEmailInputStruct	true	"Email address to send code to"
 //	@success		200		{object}	routes.PostAuths.AuthEmailOutputStruct	"Expiry time of code"
 //	@Failure		500
-//	@Router			/auths [post]
+//	@Router			/auth [post]
 func (c *Controller) PostAuths(ctx *gin.Context) {
 	type AuthEmailInputStruct struct {
 		Email string `json:"email"`

@@ -7,6 +7,8 @@ definitions:
         items:
           $ref: '#/definitions/models.Instance'
         type: array
+      mainSort:
+        type: string
       notes:
         type: string
       timesFound:
@@ -39,14 +41,10 @@ definitions:
         type: string
       email:
         type: string
-      firstName:
-        type: string
       follows:
         items:
           type: string
         type: array
-      lastName:
-        type: string
       mainSort:
         type: string
       password:
@@ -119,10 +117,6 @@ definitions:
         type: string
       email:
         type: string
-      firstName:
-        type: string
-      lastName:
-        type: string
       password:
         type: string
       username:
@@ -141,7 +135,7 @@ info:
   title: Polyamanita API
   version: "1.0"
 paths:
-  /auths:
+  /auth:
     post:
       consumes:
       - application/json
