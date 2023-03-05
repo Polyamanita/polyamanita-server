@@ -114,8 +114,6 @@ func TestRegisterUser(t *testing.T) {
 			{
 				"code": "asdafwad12421",
 				"username": "kyle25",
-				"firstname": "kyle",
-				"lastname": "boitz",
 				"password": "password12!",
 				"email": "kyle@gmail.com"
 			}
@@ -145,12 +143,6 @@ func TestRegisterUser(t *testing.T) {
 
 		gotUsername := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["Username"].S
 		assert.Equal(t, "kyle25", gotUsername)
-
-		gotFirstname := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["FirstName"].S
-		assert.Equal(t, "kyle", gotFirstname)
-
-		gotLastname := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["LastName"].S
-		assert.Equal(t, "boitz", gotLastname)
 
 		gotPassword := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["Password"].S
 		assert.Equal(t, "password12!", gotPassword)
@@ -252,8 +244,6 @@ func TestUpdateUser(t *testing.T) {
 			io.NopCloser(strings.NewReader(`
 			{
 				"username": "kyle25",
-				"firstName": "kyle",
-				"lastName": "boitz",
 				"email": "kyle@gmail.com"
 			}
 			`)),
@@ -287,8 +277,6 @@ func TestUpdateUser(t *testing.T) {
 		userInfo := map[string]*dynamodb.AttributeValue{
 			":0": {S: aws.String("kyle25")},
 			":1": {S: aws.String("kyle@gmail.com")},
-			":2": {S: aws.String("kyle")},
-			":3": {S: aws.String("boitz")},
 		}
 		assert.Equal(t, gotUserInfo, userInfo)
 	})
