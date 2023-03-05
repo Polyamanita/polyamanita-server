@@ -3,7 +3,6 @@ package routes
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -107,21 +106,6 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
-	// Check password requirements are met
-	if len(body.Password) < 8 {
-		c.l.Error("invalid password of length ", len(body.Password))
-		ctx.Status(http.StatusBadRequest)
-		return
-	}
-
-	// Matcher checks if the password is INVALID, not valid
-	ok, err := regexp.MatchString(`"^(.{0,7}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"`, body.Password)
-	if ok || err != nil {
-		c.l.Error("invalid password: ", err)
-		ctx.Status(http.StatusBadRequest)
-		return
-	}
-
 	// Check if email and code match
 	expr, err := e.NewBuilder().
 		WithFilter(e.Name("email").Equal(e.Value(body.Email)).
@@ -159,33 +143,6 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	if time.Now().After(expiry) {
 		c.l.Debug(fmt.Sprintf("code expired when registering email: %v code: %v", body.Email, body.Code))
 		ctx.Status(http.StatusUnauthorized)
-		return
-	}
-
-	// check if username / email taken
-	expr, err = e.NewBuilder().
-		WithFilter(e.Name("Email").Equal(e.Value(body.Email)).
-			Or(e.Name("Username").Equal(e.Value(body.Username)))).
-		Build()
-	if err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusInternalServerError)
-		return
-	}
-	scanResp, err = c.DynamoDB.Scan(&dynamodb.ScanInput{
-		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-	})
-	if err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusUnauthorized)
-		return
-	}
-	if *scanResp.Count != 0 {
-		c.l.Error(fmt.Sprintf(`username "%v" or email "%v" already in use`, body.Email, body.Email))
-		ctx.Status(http.StatusBadRequest)
 		return
 	}
 

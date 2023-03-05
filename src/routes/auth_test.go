@@ -24,7 +24,18 @@ func TestPostAuths(t *testing.T) {
 	t.Run("when the call is successful", func(t *testing.T) {
 		fakeMail := fakes.MailIFace{}
 		fakeDynamo := fakes.DynamoDBAPI{}
+		fakeDynamo.ScanCall.Stub = func(si *dynamodb.ScanInput) (*dynamodb.ScanOutput, error) {
+			if *si.TableName == "some-userbase-table" {
+				return &dynamodb.ScanOutput{
+					Count: aws.Int64(0),
+				}, nil
+			}
 
+			return nil, nil
+		}
+		fakeDynamo.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Items: []map[string]*dynamodb.AttributeValue{},
+		}
 		c := routes.NewTestController(nil, &fakeDynamo, &fakeMail, lib.NewLogger(os.Stdout))
 
 		// Setup call
@@ -35,7 +46,9 @@ func TestPostAuths(t *testing.T) {
 			"/auth",
 			io.NopCloser(strings.NewReader(`
 			{
-				"email": "some-email@domain.com"
+				"email": "some-email@domain.com",
+				"username": "kyle25",
+				"password": "password12!"
 			}
 			`)),
 		)
@@ -61,6 +74,10 @@ func TestPostAuths(t *testing.T) {
 
 		assert.Equal(t, gotCode, fakeMail.SendEmailAuthCall.Receives.Code)
 		assert.Equal(t, "some-email@domain.com", fakeMail.SendEmailAuthCall.Receives.Email)
+
+		gotEmailUser := fakeDynamo.ScanCall.Receives.ScanInput.ExpressionAttributeValues
+		wantEmailUser := map[string]*dynamodb.AttributeValue{":0": {S: aws.String("some-email@domain.com")}, ":1": {S: aws.String("kyle25")}}
+		assert.Equal(t, wantEmailUser, gotEmailUser)
 	})
 
 	t.Run("when the body request is invalid", func(t *testing.T) {
