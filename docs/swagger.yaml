@@ -154,6 +154,31 @@ paths:
       consumes:
       - application/json
       description: Sends an email to the address passed in with a verification code
+        to verify their email
+      parameters:
+      - description: Email address to send code to
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PostAuths.AuthEmailInputStruct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expiry time of code
+          schema:
+            $ref: '#/definitions/routes.PostAuths.AuthEmailOutputStruct'
+        "500":
+          description: Internal Server Error
+      summary: Send a register Verification Code
+      tags:
+      - Auth
+  /authGen:
+    post:
+      consumes:
+      - application/json
+      description: Sends an email to the address passed in with a verification code
       parameters:
       - description: Email address to send code to
         in: body

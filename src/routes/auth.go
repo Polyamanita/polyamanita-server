@@ -208,7 +208,7 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 //	@Param			request	body		routes.PostAuthsGen.AuthGenInputStruct	true	"Email address to send code to"
 //	@success		201		{object}	routes.PostAuthsGen.AuthGenOutputStruct	"Expiry time of code"
 //	@Failure		500
-//	@Router			/auth [post]
+//	@Router			/authGen [post]
 func (c *Controller) PostAuthsGen(ctx *gin.Context) {
 	type AuthGenInputStruct struct {
 		Email string `json:"email"`
