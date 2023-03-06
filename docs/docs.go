@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Send a Verification Code",
+                "summary": "Send a register Verification Code",
                 "parameters": [
                     {
                         "description": "Email address to send code to",
@@ -64,7 +64,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Send a Verification Code",
+                "summary": "Send a general Verification Code",
                 "parameters": [
                     {
                         "description": "Email address to send code to",

@@ -101,7 +101,7 @@ func (c *Controller) Logout(ctx *gin.Context) {
 
 // PostAuths godoc
 //
-//	@Summary		Send a Verification Code
+//	@Summary		Send a register Verification Code
 //	@Description	Sends an email to the address passed in with a verification code to verify their email
 //	@Tags			Auth
 //	@Accept			json
@@ -200,7 +200,7 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 
 // PostAuthsGen godoc
 //
-//	@Summary		Send a Verification Code
+//	@Summary		Send a general Verification Code
 //	@Description	Sends an email to the address passed in with a verification code for general use
 //	@Tags			Auth
 //	@Accept			json

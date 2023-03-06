@@ -171,7 +171,7 @@ paths:
             $ref: '#/definitions/routes.PostAuths.AuthEmailOutputStruct'
         "500":
           description: Internal Server Error
-      summary: Send a Verification Code
+      summary: Send a register Verification Code
       tags:
       - Auth
   /authGen:
@@ -196,7 +196,7 @@ paths:
             $ref: '#/definitions/routes.PostAuthsGen.AuthGenOutputStruct'
         "500":
           description: Internal Server Error
-      summary: Send a Verification Code
+      summary: Send a general Verification Code
       tags:
       - Auth
   /session:
