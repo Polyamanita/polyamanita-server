@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Send a Verification Code",
+                "summary": "Send a register Verification Code",
                 "parameters": [
                     {
                         "description": "Email address to send code to",
@@ -44,6 +44,43 @@ const docTemplate = `{
                         "description": "Expiry time of code",
                         "schema": {
                             "$ref": "#/definitions/routes.PostAuths.AuthEmailOutputStruct"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/authGen": {
+            "post": {
+                "description": "Sends an email to the address passed in with a verification code for general use",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send a general Verification Code",
+                "parameters": [
+                    {
+                        "description": "Email address to send code to",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.PostAuthsGen.AuthGenInputStruct"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Expiry time of code",
+                        "schema": {
+                            "$ref": "#/definitions/routes.PostAuthsGen.AuthGenOutputStruct"
                         }
                     },
                     "500": {
@@ -603,6 +640,22 @@ const docTemplate = `{
             }
         },
         "routes.PostAuths.AuthEmailOutputStruct": {
+            "type": "object",
+            "properties": {
+                "codeExpiry": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.PostAuthsGen.AuthGenInputStruct": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.PostAuthsGen.AuthGenOutputStruct": {
             "type": "object",
             "properties": {
                 "codeExpiry": {

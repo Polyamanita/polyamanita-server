@@ -115,6 +115,16 @@ definitions:
       codeExpiry:
         type: string
     type: object
+  routes.PostAuthsGen.AuthGenInputStruct:
+    properties:
+      email:
+        type: string
+    type: object
+  routes.PostAuthsGen.AuthGenOutputStruct:
+    properties:
+      codeExpiry:
+        type: string
+    type: object
   routes.RegisterUser.RegisterInputStruct:
     properties:
       code:
@@ -161,7 +171,32 @@ paths:
             $ref: '#/definitions/routes.PostAuths.AuthEmailOutputStruct'
         "500":
           description: Internal Server Error
-      summary: Send a Verification Code
+      summary: Send a register Verification Code
+      tags:
+      - Auth
+  /authGen:
+    post:
+      consumes:
+      - application/json
+      description: Sends an email to the address passed in with a verification code
+        for general use
+      parameters:
+      - description: Email address to send code to
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PostAuthsGen.AuthGenInputStruct'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Expiry time of code
+          schema:
+            $ref: '#/definitions/routes.PostAuthsGen.AuthGenOutputStruct'
+        "500":
+          description: Internal Server Error
+      summary: Send a general Verification Code
       tags:
       - Auth
   /session:
