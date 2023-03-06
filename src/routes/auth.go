@@ -198,4 +198,72 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 	})
 }
 
+// PostAuthsGen godoc
+//
+//	@Summary		Send a Verification Code
+//	@Description	Sends an email to the address passed in with a verification code for general use
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		routes.PostAuthsGen.AuthGenInputStruct	true	"Email address to send code to"
+//	@success		201		{object}	routes.PostAuthsGen.AuthGenOutputStruct	"Expiry time of code"
+//	@Failure		500
+//	@Router			/authGen [post]
+func (c *Controller) PostAuthsGen(ctx *gin.Context) {
+	type AuthGenInputStruct struct {
+		Email string `json:"email"`
+	}
+	body := &AuthGenInputStruct{}
+	if err := ctx.BindJSON(body); err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	rand.Seed(time.Now().Unix())
+	code := fmt.Sprintf("%05d", rand.Intn(100000))
+	codeExpiry := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+
+	// Update auth code or if none, add a new one for the user
+	update := e.UpdateBuilder{}
+	update = update.Set(e.Name("email"), e.Value(body.Email))
+	update = update.Set(e.Name("code"), e.Value(code))
+	update = update.Set(e.Name("code_Expiry"), e.Value(codeExpiry))
+
+	expr, err := e.NewBuilder().WithUpdate(update).Build()
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+	_, err = c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: aws.String(c.secrets.ddbVerificationTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"email": {S: aws.String(body.Email)},
+		},
+		UpdateExpression:          expr.Update(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+	if err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Send email
+	if err := c.Mail.SendEmailAuth(body.Email, code); err != nil {
+		c.l.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	type AuthGenOutputStruct struct {
+		CodeExpiry string `json:"codeExpiry"`
+	}
+	ctx.JSON(http.StatusOK, &AuthGenOutputStruct{
+		CodeExpiry: codeExpiry,
+	})
+}
+
 func (c *Controller) RefreshAuthToken(ctx *gin.Context) { ctx.Status(http.StatusNotImplemented) }

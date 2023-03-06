@@ -104,6 +104,73 @@ func TestPostAuths(t *testing.T) {
 	})
 }
 
+func TestPostAuthsGen(t *testing.T) {
+	t.Run("when the call is successful", func(t *testing.T) {
+		fakeMail := fakes.MailIFace{}
+		fakeDynamo := fakes.DynamoDBAPI{}
+		c := routes.NewTestController(nil, &fakeDynamo, &fakeMail, lib.NewLogger(os.Stdout))
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodPost,
+			"/auth",
+			io.NopCloser(strings.NewReader(`
+			{
+				"email": "some-email@domain.com"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.PostAuthsGen(ctx)
+
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+		gotResp, err := ioutil.ReadAll(w.Body)
+		assert.NoError(t, err)
+		assert.Regexp(t, regexp.MustCompile(`^{"codeExpiry":.*}$`), string(gotResp))
+
+		// Validate that the call made correct function calls
+		gotTable := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.TableName
+		assert.Equal(t, "some-verification-table", gotTable)
+
+		// Validate update item key
+		gotEmail := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.Key["email"].S
+		assert.Equal(t, "some-email@domain.com", gotEmail)
+
+		// Validate update item input
+		gotCode := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.ExpressionAttributeValues[":1"].S
+		gotExpiry := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.ExpressionAttributeValues[":2"].S
+		assert.Regexp(t, regexp.MustCompile(`\b\d{5}\b`), gotCode)
+		assert.NotNil(t, gotExpiry)
+
+		// Validate sendgrid input
+		assert.Equal(t, gotCode, fakeMail.SendEmailAuthCall.Receives.Code)
+		assert.Equal(t, "some-email@domain.com", fakeMail.SendEmailAuthCall.Receives.Email)
+	})
+	t.Run("when the body request is invalid", func(t *testing.T) {
+		c := routes.NewTestController(nil, nil, nil, lib.NewLogger(os.Stdout))
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodPost,
+			"/auth",
+			io.NopCloser(strings.NewReader(`
+				"email": "some-email@domain.com"
+			}
+			`)),
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+		// Make call
+		c.PostAuths(ctx)
+		// Validate that the response is correct
+		assert.Equal(t, http.StatusBadRequest, ctx.Writer.Status())
+	})
+}
+
 func TestLogin(t *testing.T) {
 	t.Run("when the login is successful", func(t *testing.T) {
 		fakeDynamo := fakes.DynamoDBAPI{}
