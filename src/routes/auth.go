@@ -201,14 +201,14 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 // PostAuthsGen godoc
 //
 //	@Summary		Send a general Verification Code
-//	@Description	Sends an email to the address passed in with a verification code for general use
+//	@Description	Sends an email to the address passed in with a verification code
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		routes.PostAuthsGen.AuthGenInputStruct	true	"Email address to send code to"
 //	@success		201		{object}	routes.PostAuthsGen.AuthGenOutputStruct	"Expiry time of code"
 //	@Failure		500
-//	@Router			/authGen [post]
+//	@Router			/auth [post]
 func (c *Controller) PostAuthsGen(ctx *gin.Context) {
 	type AuthGenInputStruct struct {
 		Email string `json:"email"`
@@ -224,28 +224,17 @@ func (c *Controller) PostAuthsGen(ctx *gin.Context) {
 	code := fmt.Sprintf("%05d", rand.Intn(100000))
 	codeExpiry := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
 
-	// Update auth code or if none, add a new one for the user
-	update := e.UpdateBuilder{}
-	update = update.Set(e.Name("email"), e.Value(body.Email))
-	update = update.Set(e.Name("code"), e.Value(code))
-	update = update.Set(e.Name("code_Expiry"), e.Value(codeExpiry))
+	//TODO: check if email exists already, if so replace entry
 
-	expr, err := e.NewBuilder().WithUpdate(update).Build()
-	if err != nil {
-		c.l.Error(err)
-		ctx.Status(http.StatusInternalServerError)
-		return
-	}
-	_, err = c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+	if _, err := c.DynamoDB.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(c.secrets.ddbVerificationTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			"email": {S: aws.String(body.Email)},
+		Item: map[string]*dynamodb.AttributeValue{
+			"id":         {S: aws.String(uuid.New().String())},
+			"email":      {S: aws.String(body.Email)},
+			"code":       {S: aws.String(code)},
+			"codeExpiry": {S: aws.String(codeExpiry)},
 		},
-		UpdateExpression:          expr.Update(),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-	})
-	if err != nil {
+	}); err != nil {
 		c.l.Error(err)
 		ctx.Status(http.StatusInternalServerError)
 		return
