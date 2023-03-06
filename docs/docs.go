@@ -54,7 +54,7 @@ const docTemplate = `{
         },
         "/authGen": {
             "post": {
-                "description": "Sends an email to the address passed in with a verification code for general use",
+                "description": "Sends an email to the address passed in with a verification code",
                 "consumes": [
                     "application/json"
                 ],

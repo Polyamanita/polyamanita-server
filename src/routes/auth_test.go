@@ -133,20 +133,13 @@ func TestPostAuthsGen(t *testing.T) {
 		assert.Regexp(t, regexp.MustCompile(`^{"codeExpiry":.*}$`), string(gotResp))
 
 		// Validate that the call made correct function calls
-		gotTable := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.TableName
+		gotTable := *fakeDynamo.PutItemCall.Receives.PutItemInput.TableName
 		assert.Equal(t, "some-verification-table", gotTable)
-
-		// Validate update item key
-		gotEmail := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.Key["email"].S
-		assert.Equal(t, "some-email@domain.com", gotEmail)
-
-		// Validate update item input
-		gotCode := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.ExpressionAttributeValues[":1"].S
-		gotExpiry := *fakeDynamo.UpdateItemCall.Receives.UpdateItemInput.ExpressionAttributeValues[":2"].S
+		gotCode := *fakeDynamo.PutItemCall.Receives.PutItemInput.Item["code"].S
 		assert.Regexp(t, regexp.MustCompile(`\b\d{5}\b`), gotCode)
-		assert.NotNil(t, gotExpiry)
+		gotExpiry := fakeDynamo.PutItemCall.Receives.PutItemInput.Item["codeExpiry"].S
 
-		// Validate sendgrid input
+		assert.NotNil(t, gotExpiry)
 		assert.Equal(t, gotCode, fakeMail.SendEmailAuthCall.Receives.Code)
 		assert.Equal(t, "some-email@domain.com", fakeMail.SendEmailAuthCall.Receives.Email)
 	})

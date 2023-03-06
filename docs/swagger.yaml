@@ -179,7 +179,6 @@ paths:
       consumes:
       - application/json
       description: Sends an email to the address passed in with a verification code
-        for general use
       parameters:
       - description: Email address to send code to
         in: body
