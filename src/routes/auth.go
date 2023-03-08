@@ -32,6 +32,10 @@ func (c *Controller) Login(ctx *gin.Context) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+	type ErrorOutputStruct struct {
+		Response string `json:"response"`
+	}
+
 	body := &LoginInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
 		c.l.Error(err)
@@ -56,12 +60,12 @@ func (c *Controller) Login(ctx *gin.Context) {
 	})
 	if err != nil {
 		c.l.Error(err)
-		ctx.Status(http.StatusUnauthorized)
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 	if *scanResp.Count == 0 {
 		c.l.Debug(fmt.Sprintf(`invalid credentials for %v`, body.Email))
-		ctx.Status(http.StatusUnauthorized)
+		ctx.JSON(http.StatusUnauthorized, &ErrorOutputStruct{Response: "invalid credentials"})
 		return
 	}
 
@@ -116,6 +120,10 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
+	type ErrorOutputStruct struct {
+		Response string `json:"response"`
+	}
+
 	body := &AuthEmailInputStruct{}
 	if err := ctx.BindJSON(body); err != nil {
 		c.l.Error(err)
@@ -125,8 +133,8 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 
 	// Check password requirements are met
 	if len(body.Password) < 8 {
-		c.l.Error("invalid password of length ", len(body.Password))
-		ctx.Status(http.StatusBadRequest)
+		c.l.Error("invalid password length ", len(body.Password))
+		ctx.JSON(http.StatusBadRequest, &ErrorOutputStruct{Response: fmt.Sprintf("invalid password length %v", body.Password)})
 		return
 	}
 
@@ -134,7 +142,7 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 	ok, err := regexp.MatchString(`"^(.{0,7}|[^0-9]*|[^A-Z]*|[^a-z]*|[a-zA-Z0-9]*)$"`, body.Password)
 	if ok || err != nil {
 		c.l.Error("invalid password: ", err)
-		ctx.Status(http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, &ErrorOutputStruct{Response: "password does not meet requirements"})
 		return
 	}
 
@@ -156,12 +164,12 @@ func (c *Controller) PostAuths(ctx *gin.Context) {
 	})
 	if err != nil {
 		c.l.Error(err)
-		ctx.Status(http.StatusUnauthorized)
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 	if *scanResp.Count != 0 {
 		c.l.Error(fmt.Sprintf(`username "%v" or email "%v" already in use`, body.Username, body.Email))
-		ctx.Status(http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, &ErrorOutputStruct{Response: "username or email already in use"})
 		return
 	}
 
