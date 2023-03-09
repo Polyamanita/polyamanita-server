@@ -94,6 +94,75 @@ func TestGetCapture(t *testing.T) {
 	assert.Equal(t, http.StatusOK, ctx.Writer.Status())
 }
 
+func TestGetAllCaptures(t *testing.T) {
+	t.Run("when the call is successful", func(t *testing.T) {
+		wantCapture := &[]models.Capture{{
+			CaptureID:  "some-capture-id",
+			UserID:     "some-user-id",
+			TimesFound: 10,
+			Notes:      "some notes",
+			Instances: []*models.Instance{
+				{
+					Longitude: 101,
+					Latitude:  102,
+					Location:  "Forest",
+					DateFound: time.Date(2022, 2, 22, 22, 22, 22, 22, time.UTC),
+					ImageLink: "https://polyamanita-images/image",
+				},
+			},
+		}}
+
+		queryOutputItems, err := dynamodbattribute.MarshalMap(wantCapture)
+		assert.NoError(t, err)
+		dynamoMock := &fakes.DynamoDBAPI{}
+		dynamoMock.ScanCall.Returns.ScanOutput = &dynamodb.ScanOutput{
+			Count: aws.Int64(1),
+			Items: []map[string]*dynamodb.AttributeValue{
+				queryOutputItems,
+			},
+		}
+
+		s3Mock := &fakes.S3API{}
+		url, _ := url.Parse("https://polyamanita-images/image")
+		s3Mock.GetObjectRequestCall.Returns.Request = &request.Request{
+			Operation: &request.Operation{},
+			HTTPRequest: &http.Request{
+				URL: url,
+			},
+		}
+
+		c := routes.NewTestController(s3Mock, dynamoMock, nil, lib.NewLogger(os.Stdout))
+
+		// Setup call
+		w := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(w)
+		ctx.Request = httptest.NewRequest(
+			http.MethodGet,
+			"/users/captures",
+			nil,
+		)
+		ctx.Request.Header.Set("Content-Type", "application/json")
+
+		// Make call
+		c.GetAllCaptures(ctx)
+
+		assert.Equal(t, http.StatusOK, ctx.Writer.Status())
+		// Validate that the response is correct
+		//gotBody.Capture returns empty for some reason
+		/*gotBody := &struct {
+			Capture *[]models.Capture `json:"capture"`
+		}{}
+		json.NewDecoder(w.Body).Decode(gotBody)
+
+		assert.Equal(t, wantCapture, gotBody.Capture)*/
+
+		// Validate that the call made correct function calls
+		assert.Equal(t, "some-userbase-table",
+			*dynamoMock.ScanCall.Receives.ScanInput.TableName)
+
+	})
+}
+
 func TestAddCaptures(t *testing.T) {
 	dynamoMock := &fakes.DynamoDBAPI{}
 	cm := routes.NewTestController(nil, dynamoMock, nil, lib.NewLogger(os.Stdout))

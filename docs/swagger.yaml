@@ -70,6 +70,13 @@ definitions:
           type: object
         type: array
     type: object
+  routes.GetAllCaptures.GetAllCapturesOutputStruct:
+    properties:
+      capture:
+        items:
+          $ref: '#/definitions/models.Capture'
+        type: array
+    type: object
   routes.GetCapture.GetCaptureOutputStruct:
     properties:
       capture:
@@ -448,6 +455,23 @@ paths:
         "401":
           description: Unauthorized
       summary: Uploads an image for the user to S3, FOR CAPTURE UPLOAD
+      tags:
+      - Captures
+  /users/captures:
+    get:
+      consumes:
+      - application/json
+      description: Gets all captures from DDB
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: List of all mushrooms
+          schema:
+            $ref: '#/definitions/routes.GetAllCaptures.GetAllCapturesOutputStruct'
+        "500":
+          description: Internal Server Error
+      summary: Gets captures from all Users
       tags:
       - Captures
 swagger: "2.0"
