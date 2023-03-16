@@ -33,7 +33,11 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	//build expression to query table
 	partKey := e.Key("UserID").Equal(e.Value(userID))
 	sortKey := e.Key("MainSort").BeginsWith("Capture#")
-	projection := e.NamesList(e.Name("CaptureID"), e.Name("TimesFound"))
+	projection := e.NamesList(
+		e.Name("CaptureID"),
+		e.Name("TimesFound"),
+		e.Name("Instances"),
+		e.Name("Notes"))
 	expr, err := e.NewBuilder().
 		WithKeyCondition(e.KeyAnd(partKey, sortKey)).
 		WithProjection(projection).
