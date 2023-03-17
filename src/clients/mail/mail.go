@@ -34,13 +34,13 @@ func New(l *lib.Logger) (*MailClient, error) {
 }
 
 func (c *MailClient) SendEmailAuth(email, code string) error {
-	from := mail.NewEmail("Amelia", "no-reply@polyamanita.com")
+	from := mail.NewEmail("Polyamanita", "no-reply@em321.polyamanita.com")
 	to := mail.NewEmail(email, email)
 	msg := fmt.Sprintf(
 		`<h1>Hey!</h1>
 		<p>Please verify your email by using the code %s</p>
 		<br/>
-		<p>Amelia</p>`,
+		<p>Polyamanita</p>`,
 		code)
 
 	response, err := c.sc.Send(
