@@ -249,8 +249,42 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 		}
 
 		// Update stats
+		TotalCaptures := 0
 		expr, err = e.NewBuilder().
-			WithUpdate(e.Add(e.Name("TotalCaptures"), e.Value(len(capture.Instances)))).
+			WithFilter(e.And(
+				e.Name("MainSort").BeginsWith("Capture#"),
+				e.Name("UserID").Contains(userID))).
+			WithProjection(e.NamesList(
+				e.Name("TimesFound"))).
+			Build()
+		if err != nil {
+			c.l.Error(err)
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
+		scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
+			TableName:                 aws.String(c.secrets.ddbUserbaseTable),
+			FilterExpression:          expr.Filter(),
+			ProjectionExpression:      expr.Projection(),
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+		})
+		if err != nil {
+			c.l.Error(err)
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
+
+		if scanResp == nil {
+			c.l.Debug("No captures found for userID: ", userID)
+			TotalCaptures = 0
+			return
+		} else {
+			TotalCaptures = int(*scanResp.Count)
+		}
+
+		expr, err = e.NewBuilder().
+			WithUpdate(e.Set(e.Name("TotalCaptures"), e.Value(TotalCaptures))).
 			Build()
 		if err != nil {
 			c.l.Error("unable to build expression: ", err)
