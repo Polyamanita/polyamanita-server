@@ -161,7 +161,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 		Username: body.Username,
 		Email:    body.Email,
 		Password: body.Password,
-		MainSort: "MetaData",
+		MainSort: "Metadata",
 	}
 	item, err := dynamodbattribute.MarshalMap(user)
 	if err != nil {
