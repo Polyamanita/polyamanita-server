@@ -226,12 +226,8 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 	userID := ctx.Param("UserID")
 	for _, capture := range body.Captures {
 		expr, err := e.NewBuilder().
-			WithUpdate(e.Set(
-				e.Name("Instances"),
-				e.ListAppend(
-					e.IfNotExists(e.Name("Instances"), e.Value(&dynamodb.AttributeValue{L: []*dynamodb.AttributeValue{}})),
-					e.Value(capture.Instances))).
-				Add(e.Name("TimesFound"), e.Value(len(capture.Instances))).
+			WithUpdate(e.Set(e.Name("Instances"), e.ListAppend(e.Value(&dynamodb.AttributeValue{L: []*dynamodb.AttributeValue{}}), e.Value(capture.Instances))).
+				Set(e.Name("TimesFound"), e.Value(len(capture.Instances))).
 				Set(e.Name("CaptureID"), e.IfNotExists(e.Name("CaptureID"), e.Value(capture.CaptureID))).
 				Set(e.Name("Notes"), e.Value(capture.Notes))).
 			Build()
