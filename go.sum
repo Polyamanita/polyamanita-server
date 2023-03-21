@@ -1,3 +1,5 @@
+github.com/AvraamMavridis/randomcolor v0.0.0-20180822172341-208aff70bf2c h1:XLynE8YGJdvPN65iI+G+Ys5ZUVS6YxWk8WPe/FmBReg=
+github.com/AvraamMavridis/randomcolor v0.0.0-20180822172341-208aff70bf2c/go.mod h1:vX+Cl5GOtK2DkzgsggLoeNUbxAcUWBaybCKzVRYsRMo=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
