@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AvraamMavridis/randomcolor"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -156,12 +157,19 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 
 	// put user into table
 	userID := uuid.NewString()
+
+	color1 := randomcolor.GetRandomColorInHex()
+	time.Sleep(10 * time.Millisecond)
+	color2 := randomcolor.GetRandomColorInHex()
+
 	user := &models.User{
 		UserID:   userID,
 		Username: body.Username,
 		Email:    body.Email,
 		Password: body.Password,
 		MainSort: "Metadata",
+		Color1:   color1,
+		Color2:   color2,
 	}
 	item, err := dynamodbattribute.MarshalMap(user)
 	if err != nil {
