@@ -215,7 +215,7 @@ func TestAddCaptures(t *testing.T) {
 	assert.Equal(t,
 		map[string]*dynamodb.AttributeValue{
 			"UserID":   {S: aws.String("some-user-id")},
-			"MainSort": {S: aws.String("Metadata")},
+			"MainSort": {S: aws.String(fmt.Sprintf("Capture#%s#%s", "some-user-id", "some-capture-id"))},
 		},
 		dynamoMock.UpdateItemCall.Receives.UpdateItemInput.Key,
 	)
