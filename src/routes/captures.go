@@ -224,10 +224,17 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 	}
 
 	userID := ctx.Param("UserID")
+	totalInstances := 0
 	for _, capture := range body.Captures {
+		totalInstances += len(capture.Instances)
+
 		expr, err := e.NewBuilder().
-			WithUpdate(e.Set(e.Name("Instances"), e.ListAppend(e.Value(&dynamodb.AttributeValue{L: []*dynamodb.AttributeValue{}}), e.Value(capture.Instances))).
-				Set(e.Name("TimesFound"), e.Value(len(capture.Instances))).
+			WithUpdate(e.Set(
+				e.Name("Instances"),
+				e.ListAppend(
+					e.IfNotExists(e.Name("Instances"), e.Value(&dynamodb.AttributeValue{L: []*dynamodb.AttributeValue{}})),
+					e.Value(capture.Instances))).
+				Add(e.Name("TimesFound"), e.Value(len(capture.Instances))).
 				Set(e.Name("CaptureID"), e.IfNotExists(e.Name("CaptureID"), e.Value(capture.CaptureID))).
 				Set(e.Name("Notes"), e.Value(capture.Notes))).
 			Build()
@@ -247,62 +254,26 @@ func (c *Controller) AddCaptures(ctx *gin.Context) {
 		}); err != nil {
 			c.l.Error("unable to updateitem: ", err)
 		}
-
-		// Update stats
-		TotalCaptures := 0
-		expr, err = e.NewBuilder().
-			WithFilter(e.And(
-				e.Name("MainSort").BeginsWith("Capture#"),
-				e.Name("UserID").Contains(userID))).
-			WithProjection(e.NamesList(
-				e.Name("TimesFound"))).
-			Build()
-		if err != nil {
-			c.l.Error(err)
-			ctx.Status(http.StatusInternalServerError)
-			return
-		}
-		scanResp, err := c.DynamoDB.Scan(&dynamodb.ScanInput{
-			TableName:                 aws.String(c.secrets.ddbUserbaseTable),
-			FilterExpression:          expr.Filter(),
-			ProjectionExpression:      expr.Projection(),
-			ExpressionAttributeNames:  expr.Names(),
-			ExpressionAttributeValues: expr.Values(),
-		})
-		if err != nil {
-			c.l.Error(err)
-			ctx.Status(http.StatusInternalServerError)
-			return
-		}
-
-		if scanResp == nil {
-			c.l.Debug("No captures found for userID: ", userID)
-			TotalCaptures = 0
-			return
-		} else {
-			TotalCaptures = int(*scanResp.Count)
-		}
-
-		expr, err = e.NewBuilder().
-			WithUpdate(e.Set(e.Name("TotalCaptures"), e.Value(TotalCaptures))).
-			Build()
-		if err != nil {
-			c.l.Error("unable to build expression: ", err)
-		}
-		if _, err := c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
-			TableName: aws.String(c.secrets.ddbUserbaseTable),
-			Key: map[string]*dynamodb.AttributeValue{
-				"UserID":   {S: aws.String(userID)},
-				"MainSort": {S: aws.String("Metadata")},
-			},
-			UpdateExpression:          expr.Update(),
-			ExpressionAttributeNames:  expr.Names(),
-			ExpressionAttributeValues: expr.Values(),
-		}); err != nil {
-			c.l.Error("unable to updateitem: ", err)
-		}
 	}
 
+	expr, err := e.NewBuilder().
+		WithUpdate(e.Add(e.Name("TotalCaptures"), e.Value(totalInstances))).
+		Build()
+	if err != nil {
+		c.l.Error("unable to build expression: ", err)
+	}
+	if _, err := c.DynamoDB.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: aws.String(c.secrets.ddbUserbaseTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"UserID":   {S: aws.String(userID)},
+			"MainSort": {S: aws.String("Metadata")},
+		},
+		UpdateExpression:          expr.Update(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	}); err != nil {
+		c.l.Error("unable to updateitem: ", err)
+	}
 	ctx.Status(http.StatusOK)
 }
 
