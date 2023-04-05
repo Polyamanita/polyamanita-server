@@ -33,14 +33,8 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	//build expression to query table
 	partKey := e.Key("UserID").Equal(e.Value(userID))
 	sortKey := e.Key("MainSort").BeginsWith("Capture#")
-	projection := e.NamesList(
-		e.Name("CaptureID"),
-		e.Name("TimesFound"),
-		e.Name("Instances"),
-		e.Name("Notes"))
 	expr, err := e.NewBuilder().
 		WithKeyCondition(e.KeyAnd(partKey, sortKey)).
-		WithProjection(projection).
 		Build()
 	if err != nil {
 		c.l.Error(err)
@@ -50,7 +44,6 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 	queryResp, err := c.DynamoDB.Query(&dynamodb.QueryInput{
 		TableName:                 aws.String(c.secrets.ddbUserbaseTable),
 		KeyConditionExpression:    expr.KeyCondition(),
-		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 	})
@@ -70,6 +63,22 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 		return
 	}
 
+	for _, capture := range resp.Captures {
+		for _, instance := range capture.Instances {
+			req, _ := c.S3.GetObjectRequest(&s3.GetObjectInput{
+				Bucket: aws.String(c.secrets.s3StoreBucket),
+				Key:    aws.String(instance.S3Key),
+			})
+
+			url, err := req.Presign(1 * time.Hour)
+			if err != nil {
+				c.l.Error("couldn't presign GetObjectRequest for key "+instance.S3Key+": ", err)
+			}
+
+			instance.ImageLink = url
+		}
+	}
+
 	ctx.JSON(http.StatusOK, resp)
 }
 
@@ -84,7 +93,6 @@ func (c *Controller) GetCapturesList(ctx *gin.Context) {
 //	@Failure		500
 //	@Router			/users/captures [get]
 func (c *Controller) GetAllCaptures(ctx *gin.Context) {
-
 	//build expression to query table
 	filter := e.Name("CaptureID").AttributeExists()
 	expr, err := e.NewBuilder().
